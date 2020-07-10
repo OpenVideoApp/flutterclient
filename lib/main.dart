@@ -11,11 +11,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: "OpenVideo",
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
-        home: VideoPlayerScreen()
+      title: "OpenVideo",
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      home: VideoPlayerScreen()
     );
   }
 }
@@ -30,8 +30,9 @@ class VideoPlayerScreen extends StatefulWidget {
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final List<String> _videoLinks = [
     "https://open-video.s3-ap-southeast-2.amazonaws.com/cah-ad.mp4",
-    "https://open-video.s3-ap-southeast-2.amazonaws.com/video_1594282582062.mp4",
-    "https://open-video.s3-ap-southeast-2.amazonaws.com/borders2.mp4"
+    "https://open-video.s3-ap-southeast-2.amazonaws.com/dorime.mp4",
+    "https://open-video.s3-ap-southeast-2.amazonaws.com/mario_piano.mp4",
+    "https://open-video.s3-ap-southeast-2.amazonaws.com/portland.mp4"
   ];
 
   List<VideoPlayerController> _videoControllers;
@@ -89,79 +90,83 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
     }
 
+    double progress = 0;
+    if (_videoControllers[id].value.duration != null) {
+      progress = _videoControllers[id].value.position.inMilliseconds.toDouble() / _videoControllers[id].value.duration.inMilliseconds.toDouble();
+    }
+
     return Container(
-        width: width,
-        height: height,
-        alignment: Alignment.bottomCenter,
-        child: Stack(children: <Widget>[
-          Center(
-              child: ClipRect(
-                  child: OverflowBox(
-                      maxWidth: videoWidth,
-                      maxHeight: videoHeight,
-                      alignment: Alignment.center,
-                      child: FittedBox(
-                          fit: BoxFit.fitWidth,
-                          alignment: Alignment.center,
-                          child: FutureBuilder(
-                              future: _videoControllerFutures[id],
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.done) {
-                                  return Container(
-                                      width: _videoControllers[id].value.size.width,
-                                      height: _videoControllers[id].value.size.height,
-                                      child: GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTap: () {
-                                            setState(() {
-                                              if (_videoControllers[id].value.isPlaying) {
-                                                _videoControllers[id].pause();
-                                                _paused = true;
-                                              }
-                                              else {
-                                                _videoControllers[id].play();
-                                                _paused = false;
-                                              }
-                                            });
-                                          },
-                                          child: VideoPlayer(_videoControllers[id])
-                                      )
-                                  );
-                                } else {
-                                  return Center(
-                                      child: CircularProgressIndicator()
-                                  );
-                                }
+      width: width,
+      height: height,
+      alignment: Alignment.bottomCenter,
+      child: Stack(children: <Widget>[
+        Center(
+          child: ClipRect(
+            child: OverflowBox(
+              maxWidth: videoWidth,
+              maxHeight: videoHeight,
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.center,
+                child: FutureBuilder(
+                  future: _videoControllerFutures[id],
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return Container(
+                        width: _videoControllers[id].value.size.width,
+                        height: _videoControllers[id].value.size.height,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            setState(() {
+                              if (_videoControllers[id].value.isPlaying) {
+                                _videoControllers[id].pause();
+                                _paused = true;
                               }
-                          )
-                      )
-                  )
+                              else {
+                                _videoControllers[id].play();
+                                _paused = false;
+                              }
+                            });
+                          },
+                          child: VideoPlayer(_videoControllers[id])
+                        )
+                      );
+                    } else {
+                      return Center(
+                          child: CircularProgressIndicator()
+                      );
+                    }
+                  }
+                )
               )
-          ),
-          if (!_videoControllers[id].value.isPlaying && _paused) Center(
-              child: Icon(
-                  Icons.pause,
-                  color: theme.textTheme.headline1.color,
-                  size: 100
-              )
-          ),
-          if (_videoControllers[id].value.position != null) Align(
-              alignment: Alignment.bottomCenter,
-              child: LinearProgressIndicator(
-                  value: _videoControllers[id].value.position.inMilliseconds.toDouble() / _videoControllers[id].value.duration.inMilliseconds.toDouble(),
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 4
-              )
+            )
           )
-        ])
+        ),
+        if (!_videoControllers[id].value.isPlaying && _paused) Center(
+          child: Icon(
+            Icons.play_arrow,
+            color: Colors.white,
+            size: 100
+          )
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.transparent,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            minHeight: 4
+          )
+        )
+      ])
     );
   }
 
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
-
     return Scaffold(
       body: SafeArea(
           child: NotificationListener(
@@ -178,44 +183,45 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 return false;
               },
               child: PageView(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  children: [
-                    makeVideo(0),
-                    makeVideo(1),
-                    makeVideo(2)
-                  ],
-                  onPageChanged: (page) {
-                    setState(() {
-                      _videoControllers[_selectedPage].seekTo(Duration.zero);
-                      _paused = false;
-                      _selectedPage = page;
-                    });
-                  }
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                children: [
+                  makeVideo(0),
+                  makeVideo(1),
+                  makeVideo(2),
+                  makeVideo(3)
+                ],
+                onPageChanged: (page) {
+                  setState(() {
+                    _videoControllers[_selectedPage].seekTo(Duration.zero);
+                    _paused = false;
+                    _selectedPage = page;
+                  });
+                }
               )
           )
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              title: Text("Home")
+            icon: Icon(Icons.home),
+            title: Text("Home")
           ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              title: Text("Search")
+            icon: Icon(Icons.search),
+            title: Text("Search")
           ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt),
-              title: Text("Create")
+            icon: Icon(Icons.camera_alt),
+            title: Text("Create")
           ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.message),
-              title: Text("Chat")
+            icon: Icon(Icons.message),
+            title: Text("Chat")
           ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              title: Text("Profile")
+            icon: Icon(Icons.person),
+            title: Text("Profile")
           )
         ],
         type: BottomNavigationBarType.fixed,
