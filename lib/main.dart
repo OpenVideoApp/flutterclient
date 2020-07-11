@@ -136,7 +136,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     for (int i = 0; i < words.length; i++) {
       String word = words[i];
-      if (word.indexOf("#") == 0) {
+      if (word.indexOf("#") == 0 || word.indexOf("@") == 0) {
         formattedWords.add(
           TextSpan(
             text: word,
@@ -150,7 +150,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
       if (i < words.length) formattedWords.add(TextSpan(text: " "));
     }
-    
+
     return RichText(
       text: TextSpan(
         text: "",
@@ -324,6 +324,41 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 )
               )
 
+            ]
+          )
+        ),
+        Container(
+          padding: EdgeInsets.all(10),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    fit: BoxFit.fill,
+                    image: NetworkImage("https://open-video.s3-ap-southeast-2.amazonaws.com/raphydaphy.jpg")
+                  )
+                )
+              ),
+              Padding(
+                padding: EdgeInsets.all(5)
+              ),
+              formatText("@raphydaphy \n4831 Followers"),
+              Expanded(
+                child: Text("")
+              ),
+              GestureDetector(
+                onTap: () {
+                  print("Report Video #$id");
+                },
+                child: Icon(
+                  FontAwesome.ellipsis_h_solid,
+                  size: 40,
+                  color: Colors.white
+                )
+              )
             ]
           )
         )
