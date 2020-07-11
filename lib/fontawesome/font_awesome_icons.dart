@@ -14,5 +14,5 @@ class FontAwesome {
   static const IconData comment_lines_solid = IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData music_solid = IconData(0xe802, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData video_plus_solid = IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData ellipsis_h_solid = IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData ellipsis_h_regular = IconData(0xe804, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

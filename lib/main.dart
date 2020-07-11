@@ -103,7 +103,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     });
   }
 
-  Widget makeVideoButton({IconData icon, String text, VoidCallback callback}) {
+  Widget makeVideoButton({IconData icon, String text, Color color, VoidCallback callback}) {
+    if (color == null) color = Colors.white;
     return GestureDetector(
       onTap: callback,
       child: Container(
@@ -114,7 +115,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             Icon(
               icon,
               size: 35,
-              color: Colors.white
+              color: color
             ),
             Text(
               text,
@@ -223,6 +224,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
                           onTap: () => toggleVideo(id),
+                          onDoubleTap: () {
+                            setState(() {
+                              _videos[id].liked = true;
+                            });
+                          },
                           child: VideoPlayer(_videos[id].controller)
                         )
                       );
@@ -302,8 +308,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     makeVideoButton(
                       icon: Icons.favorite,
                       text: compactNumber(_videos[id].likes),
+                      color: _videos[id].liked ? Colors.red : Colors.white,
                       callback: () {
                         print("Liked video #${id.toString()}");
+                        setState(() {
+                          _videos[id].liked = !_videos[id].liked;
+                        });
                       }
                     ),
                     makeVideoButton(
@@ -330,31 +340,38 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         Container(
           padding: EdgeInsets.all(10),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    fit: BoxFit.fill,
-                    image: NetworkImage("https://open-video.s3-ap-southeast-2.amazonaws.com/raphydaphy.jpg")
-                  )
+              GestureDetector(
+                onTap: () {
+                  print("Clicked profile on video #$id");
+                },
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                          fit: BoxFit.fill,
+                          image: NetworkImage("https://open-video.s3-ap-southeast-2.amazonaws.com/raphydaphy.jpg")
+                        )
+                      )
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(5)
+                    ),
+                    formatText("@raphydaphy \n4831 Followers")
+                  ]
                 )
-              ),
-              Padding(
-                padding: EdgeInsets.all(5)
-              ),
-              formatText("@raphydaphy \n4831 Followers"),
-              Expanded(
-                child: Text("")
               ),
               GestureDetector(
                 onTap: () {
                   print("Report Video #$id");
                 },
                 child: Icon(
-                  FontAwesome.ellipsis_h_solid,
+                  FontAwesome.ellipsis_h_regular,
                   size: 40,
                   color: Colors.white
                 )
