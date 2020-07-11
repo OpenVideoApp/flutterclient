@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   video_player: ">=0.10.5 <2.0.0"
+  camera: ">=0.5.8"
   intl: ^0.16.1
   cupertino_icons: ^0.1.3
 
