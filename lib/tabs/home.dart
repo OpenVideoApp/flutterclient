@@ -22,18 +22,13 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   StreamSubscription _streamSubscription;
 
-  final List<Video> _videos = [
-    new Video(
-      src: "https://open-video.s3-ap-southeast-2.amazonaws.com/cah-ad.mp4",
-      desc: "I made this site so that you can play #cardsagainsthumanity despite being in #quarantine! Link in bio.",
-      sound: new Sound("original sound\ncards against quarantine"),
-      likes: 168302,
-      comments: 3048,
-      shares: 34931
-    )
-  ];
+  final List<Video> _videos = [];
 
   PageController _pageController;
+
+  // Used to track the index of the first and last video currently loaded
+  int _oldestVideo = 0;
+  int _latestVideo = 0;
 
   int _selectedPage = 0;
   bool _paused;
@@ -48,35 +43,48 @@ class _HomeTabState extends State<HomeTab> {
     super.initState();
 
     _paused = false;
-    setupVideo(_videos[0]);
 
-    for (int i = 0; i < 4; i++) {
-      getVideo().then((video) {
-        setupVideo(video).then((_) {
+    fetchVideos(count: 5).then((videos) {
+      for (int video = 0; video < videos.length; video++) {
+        setupVideo(videos[video]).then((_) {
           setState(() {
-            _videos.add(video);
+            _latestVideo = _videos.length;
+            _videos.add(videos[video]);
+
+            // If this is the first video, start playing it
+            if (_videos.length == 1 && !videos[video].controller.value
+              .isPlaying) {
+              videos[video].controller.play();
+            }
           });
         });
-      });
-    }
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        print("Playing video ${_pageController.page}");
-        _videos[_pageController.page.toInt()].controller.play();
-      });
+      if (_videos.length > _pageController.page.toInt()) {
+        setState(() {
+          print("Playing video ${_pageController.page}");
+          _videos[_pageController.page.toInt()].controller.play();
+        });
+      }
     });
 
     _pageController = PageController();
 
     _streamSubscription = widget.shouldTriggerChange.listen((info) {
-      if (info.from == 0 && info.to != 0) {
-        if (_videos[_selectedPage].controller.value.isPlaying) {
-          _videos[_selectedPage].controller.pause();
-        }
-      } else if (info.to == 0 && info.from != 0) {
-        if (!_paused && !_videos[_selectedPage].controller.value.isPlaying) {
-          _videos[_selectedPage].controller.play();
+      if (_videos.length > _selectedPage) {
+        if (_videos[_selectedPage].active) {
+          if (info.from == 0 && info.to != 0) {
+            if (_videos[_selectedPage].controller.value.isPlaying) {
+              _videos[_selectedPage].controller.pause();
+            }
+          } else if (info.to == 0 && info.from != 0) {
+            if (!_paused && !_videos[_selectedPage].controller.value
+              .isPlaying) {
+              _videos[_selectedPage].controller.play();
+            }
+          }
         }
       }
     });
@@ -301,10 +309,26 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  Widget makeEmptyVideo() {
+    return Container(
+      alignment: Alignment.center,
+      color: Colors.black,
+      child: CircularProgressIndicator()
+    );
+  }
+
   List<Widget> getVideos() {
     List<Widget> videos = [];
     for (int video = 0; video < _videos.length; video++) {
-      videos.add(makeVideo(_videos[video]));
+      if (_videos[video].active) {
+        videos.add(makeVideo(_videos[video]));
+      } else {
+        videos.add(makeEmptyVideo());
+      }
+    }
+
+    if (_videos.length == 0) {
+      videos.add(makeEmptyVideo());
     }
     return videos;
   }
@@ -317,9 +341,61 @@ class _HomeTabState extends State<HomeTab> {
       children: getVideos(),
       onPageChanged: (page) {
         setState(() {
-          _videos[_selectedPage].controller.pause();
-          _videos[_selectedPage].controller.seekTo(Duration.zero);
-          _videos[page].controller.play();
+          Video oldVideo = _videos[_selectedPage];
+          Video newVideo = _videos[page];
+
+          if (oldVideo.active) {
+            oldVideo.controller.pause();
+            oldVideo.controller.seekTo(Duration.zero);
+          }
+
+          if (newVideo.active) {
+            _videos[page].controller.play();
+          }
+
+          // Always load at least five videos in advance
+          if (page > _selectedPage && _selectedPage > _latestVideo - 5) {
+            // Load from the server if no unloaded videos are left
+            if (_selectedPage > _videos.length - 5) {
+              fetchVideos().then((videos) {
+                setupVideo(videos[0]).then((_) {
+                  setState(() {
+                    _latestVideo = _videos.length;
+                    _videos.add(videos[0]);
+                  });
+                });
+              });
+            } else {
+              /*
+              // Reload a previously loaded video
+              Video video = _videos[_latestVideo + 1];
+              setupVideo(video).then((_) {
+                setState(() {
+                  _latestVideo++;
+                  video.active = true;
+                });
+              });
+              */
+            }
+
+            // Unload old videos
+            if (_oldestVideo + 3 < _selectedPage) {
+              if (_videos[_oldestVideo].active) {
+                _videos[_oldestVideo].active = false;
+                _videos[_oldestVideo].controller.dispose();
+                _oldestVideo++;
+              }
+            }
+          }
+
+          // Unload videos when scrolling backwards
+          if (page < _selectedPage && _latestVideo- 6 > _selectedPage) {
+            if (_videos[_latestVideo].active) {
+              _videos[_latestVideo].active = false;
+              _videos[_latestVideo].controller.dispose();
+              _latestVideo--;
+            }
+          }
 
           _paused = false;
           _selectedPage = page;
@@ -331,7 +407,7 @@ class _HomeTabState extends State<HomeTab> {
   @override
   void dispose() {
     for (int video = 0; video < _videos.length; video++) {
-      _videos[video].controller.dispose();
+      if (_videos[video].active) _videos[video].controller.dispose();
     }
     _pageController.dispose();
     _streamSubscription.cancel();

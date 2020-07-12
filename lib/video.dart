@@ -4,22 +4,26 @@ import 'package:flutter/cupertino.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 
-Future<Video> getVideo() async {
+Future<List<Video>> fetchVideos({int count = 1}) async {
   http.Response response = await http.post(
     "http://192.168.0.220:3000/video",
     headers: <String, String>{
       "Content-Type": "application/json; charset=UTF-8"
     },
     body: jsonEncode(<String, dynamic>{
-      "test": "hello world",
-      "count": 37
+      "count": count
     })
   );
 
   if (response.statusCode == 201) {
-    return Video.fromJson(json.decode(response.body));
+    var videosJson = json.decode(response.body);
+    List<Video> videos = [];
+    for (int video = 0; video < videosJson.length; video++) {
+      videos.add(Video.fromJson(videosJson[video]));
+    }
+    return videos;
   } else {
-    throw Exception("Failed to get video (response code ${response.statusCode})");
+    throw Exception("Failed to get videos (response code ${response.statusCode})");
   }
 }
 
@@ -28,6 +32,7 @@ class Video {
   int likes, shares, comments;
   bool liked;
   Sound sound;
+  bool active = true;
   VideoPlayerController controller;
   Future<void> controllerFuture;
   ScrollController soundScrollController;
