@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+enum NavInfoType {
+  Tab, Video
+}
+
+class NavInfo {
+  NavInfoType type;
+  int from, to;
+
+  NavInfo({@required this.type, @required this.from, @required this.to});
+}
+
 // Applies bold formatting to tags
 Widget formatText(String text) {
   List<String> words = text.split(" ");

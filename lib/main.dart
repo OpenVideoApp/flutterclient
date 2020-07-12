@@ -7,6 +7,7 @@ import 'package:flutterclient/tabs/create.dart';
 import 'file:///D:/Documents/Projects/OpenVideo/flutterclient/lib/tabs/home.dart';
 import 'package:flutterclient/tabs/profile.dart';
 import 'package:flutterclient/themes.dart';
+import 'package:flutterclient/uihelpers.dart';
 
 final ThemeData _lightTheme = BaseTheme(
   isDark: false,
@@ -35,12 +36,6 @@ class OpenVideoApp extends StatelessWidget {
       theme: _lightTheme
     );
   }
-}
-
-class NavInfo {
-  int from, to;
-
-  NavInfo({this.from, this.to});
 }
 
 class MainScreen extends StatefulWidget {
@@ -104,6 +99,7 @@ class _MainScreenState extends State<MainScreen> {
           setState(() {
             _changeNotifier.sink.add(
               NavInfo(
+                type: NavInfoType.Tab,
                 from: _selectedTab,
                 to: index
               )

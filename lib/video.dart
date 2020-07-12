@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
-import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 
 Future<List<Video>> fetchVideos({int count = 1}) async {
@@ -32,10 +30,6 @@ class Video {
   int likes, shares, comments;
   bool liked;
   Sound sound;
-  bool active = true;
-  VideoPlayerController controller;
-  Future<void> controllerFuture;
-  ScrollController soundScrollController;
 
   Video({String src, String desc, int likes, int shares, int comments, bool liked, Sound sound}) {
     this.src = src;
@@ -57,14 +51,6 @@ class Video {
       liked: json["liked"],
       sound: new Sound(json["sound"]["desc"])
     );
-  }
-
-  void initControllers(listener) {
-    this.controller = new VideoPlayerController.network(this.src)
-      ..setLooping(true)
-      ..addListener(listener);
-    this.controllerFuture = this.controller.initialize();
-    this.soundScrollController = new ScrollController();
   }
 }
 
