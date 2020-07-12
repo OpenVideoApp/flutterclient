@@ -6,30 +6,31 @@ import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutterclient/uihelpers.dart';
 import 'package:flutterclient/video.dart';
+import 'package:flutterclient/logging.dart';
 
 class VideoScreenController {
   final int index;
   final Video video;
 
-  bool active = true;
-  bool selected = false;
-  bool paused = false;
+  bool active;
+  bool selected;
+  bool paused;
 
   VideoPlayerController _controller;
   Future<void> future;
 
+  VoidCallback callback;
+
   VideoScreenController({
     @required this.index,
-    @required this.video
+    @required this.video,
+    this.active = true,
+    this.selected = false,
+    this.paused = false,
+    this.callback
   }) {
     if (active) {
       init();
-
-      if (selected && !paused) {
-        future.then((_) {
-          _controller.play();
-        });
-      }
     }
   }
 
@@ -38,8 +39,10 @@ class VideoScreenController {
   }
 
   void toggle() {
-    if (isPlaying()) pause();
-    else play();
+    if (isPlaying())
+      pause();
+    else
+      play();
   }
 
   void play() {
@@ -65,6 +68,7 @@ class VideoScreenController {
   }
 
   void unload() {
+    logger.i("Unloaded controller $index");
     if (!active) return;
     _controller.dispose();
     active = false;
@@ -74,6 +78,14 @@ class VideoScreenController {
     _controller = new VideoPlayerController.network(video.src);
     _controller.setLooping(true);
     future = this._controller.initialize();
+
+    future.then((_) {
+      active = true;
+      if (selected && !paused) {
+        _controller.play();
+        if (callback != null) callback();
+      }
+    });
   }
 
   void update(NavInfo info) {
@@ -88,20 +100,19 @@ class VideoScreenController {
           _controller.pause();
           _controller.seekTo(Duration.zero);
         } else if (distance < -3 || distance > 5) {
-          // Unload video
           unload();
         }
       } else if (distance > -3 && distance < 5) {
-        // Reload the video
+        logger.i("Reloaded controller #$index");
         init();
-        future.then((_) => active = true);
       }
-    } else if (info.type == NavInfoType.Tab && active &&
-      selected && !paused) {
-      if (info.from == 0 && info.to != 0) {
-        _controller.pause();
-      } else if (info.to == 0 && info.from != 0) {
-        _controller.play();
+    } else if (info.type == NavInfoType.Tab) {
+      if (active && selected && !paused) {
+        if (info.from == 0 && info.to != 0) {
+          _controller.pause();
+        } else if (info.to == 0 && info.from != 0) {
+          _controller.play();
+        }
       }
     }
   }
@@ -259,11 +270,13 @@ class _VideoScreenState extends State<VideoScreen> {
                     makeVideoButton(
                       icon: Icons.favorite,
                       text: compactNumber(widget.controller.video.likes),
-                      color: widget.controller.video.liked ? Colors.red : Colors.white,
+                      color: widget.controller.video.liked ? Colors.red : Colors
+                        .white,
                       callback: () {
                         print("Liked a video");
                         setState(() {
-                          widget.controller.video.liked = !widget.controller.video.liked;
+                          widget.controller.video.liked = !widget.controller
+                            .video.liked;
                         });
                       }
                     ),

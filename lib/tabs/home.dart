@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutterclient/tabs/video_screen.dart';
 import 'package:flutterclient/video.dart';
 import 'package:flutterclient/uihelpers.dart';
+import 'package:flutterclient/logging.dart';
 
 class HomeTab extends StatefulWidget {
   final Stream shouldTriggerChange;
@@ -31,13 +32,10 @@ class _HomeTabState extends State<HomeTab> {
         setState(() {
           _videoControllers.add(VideoScreenController(
             index: _videoControllers.length,
-            video: videos[video]
+            video: videos[video],
+            selected: _videoControllers.length == 0,
+            callback: () => setState(() => {})
           ));
-
-          // the first video should play automatically
-          if (_videoControllers.length == 1) {
-            _videoControllers[0].selected = true;
-          }
         });
       }
     });
@@ -52,13 +50,12 @@ class _HomeTabState extends State<HomeTab> {
     });
 
     _streamSubscription = widget.shouldTriggerChange.listen((info) {
+      logger.i("Changed tab from ${info.from} to ${info.to}");
       if ((info.from == 0 && info.to != 0) ||
         (info.to == 0 && info.from != 0)) {
         setState(() {
-          if (_videoControllers.length > info.from)
-            _videoControllers[info.from].update(info);
-          if (_videoControllers.length > info.to)
-            _videoControllers[info.to].update(info);
+          if (_videoControllers.length > _selectedPage)
+            _videoControllers[_selectedPage].update(info);
         });
       }
     });
@@ -103,7 +100,8 @@ class _HomeTabState extends State<HomeTab> {
               setState(() {
                 _videoControllers.add(VideoScreenController(
                   index: _videoControllers.length,
-                  video: videos[0]
+                  video: videos[0],
+                  callback: () => setState(() {})
                 ));
               });
             });
