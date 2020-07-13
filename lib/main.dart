@@ -2,38 +2,51 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutterclient/video.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/tabs/create.dart';
-import 'file:///D:/Documents/Projects/OpenVideo/flutterclient/lib/tabs/home.dart';
+import 'package:flutterclient/tabs/home.dart';
 import 'package:flutterclient/tabs/profile.dart';
 import 'package:flutterclient/themes.dart';
 import 'package:flutterclient/uihelpers.dart';
 
-final ThemeData _lightTheme = BaseTheme(
+final _lightTheme = BaseTheme(
   isDark: false,
   bg1: Colors.white,
   accent1: Colors.grey[600]
 ).themeData;
 
-final ThemeData _darkTheme = BaseTheme(
+final _darkTheme = BaseTheme(
   isDark: true,
   bg1: Colors.black,
   accent1: Colors.grey
 ).themeData;
 
+final _graphqlClient = ValueNotifier(
+  GraphQLClient(
+    cache: InMemoryCache(),
+    link: HttpLink(
+      uri: "https://7jqrk8zydc.execute-api.ap-southeast-2.amazonaws.com/Prod/graphql"
+    )
+  )
+);
+
 void main() {
-  // debugPaintSi+zeEnabled = true;
   runApp(OpenVideoApp());
 }
 
 class OpenVideoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "OpenVideo",
-      debugShowCheckedModeBanner: false,
-      home: MainScreen(),
-      theme: _lightTheme
+    return GraphQLProvider(
+      client: _graphqlClient,
+      child: MaterialApp(
+        title: "OpenVideo",
+        debugShowCheckedModeBanner: false,
+        home: MainScreen(),
+        theme: _lightTheme
+      )
     );
   }
 }
@@ -122,7 +135,7 @@ class _MainScreenState extends State<MainScreen> {
             HomeTab(
               shouldTriggerChange: _changeNotifier.stream
             ),
-            Container(),
+            fetchVideo(),
             _selectedTab == 2 ? CreateTab() : Container(),
             Container(
               color: Colors.red,

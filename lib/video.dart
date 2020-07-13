@@ -1,20 +1,74 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutterclient/logging.dart';
+import 'package:flutterclient/tabs/video_screen.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
+
+String videoQuery = """
+  query GetVideos(\$count: Int!) {
+    videos(count: \$count) {
+      src
+      desc
+    }
+  }
+""";
+
+// TODO: make this work or just use http
+Query fetchVideo() {
+  return Query(
+    options: QueryOptions(
+      documentNode: gql(videoQuery),
+      variables: {
+        "count": 3
+      }
+    ),
+    builder: (QueryResult result, {VoidCallback refetch, FetchMore fetchMore}) {
+      if (result.hasException) {
+        return Container(
+          alignment: Alignment.center,
+          child: Text(result.exception.toString())
+        );
+      } else if (result.loading) {
+        return makeEmptyVideo();
+      }
+
+      Video video = Video.fromJson(result.data["videos"][0]);
+
+      return Container(
+        alignment: Alignment.center,
+        child: Text(video.desc)
+      );
+    }
+  );
+}
 
 Future<List<Video>> fetchVideos({int count = 1}) async {
   http.Response response = await http.post(
-    "http://192.168.0.220:3000/video",
+    "https://7jqrk8zydc.execute-api.ap-southeast-2.amazonaws.com/Prod/graphql",
     headers: <String, String>{
       "Content-Type": "application/json; charset=UTF-8"
     },
-    body: jsonEncode(<String, dynamic>{
-      "count": count
-    })
+    body: """
+      {
+        videos(count: $count) {
+          src
+          desc
+          likes
+          comments
+          shares
+          liked
+          sound {
+            desc
+          }
+        }
+      }
+    """
   );
 
   if (response.statusCode == 201) {
-    var videosJson = json.decode(response.body);
+    var videosJson = json.decode(response.body)["data"]["videos"];
     List<Video> videos = [];
     for (int video = 0; video < videosJson.length; video++) {
       videos.add(Video.fromJson(videosJson[video]));
