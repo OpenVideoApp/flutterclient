@@ -63,8 +63,21 @@ class VideoScreenController {
     return new VideoPlayer(_controller);
   }
 
+  VideoPlayerController get controller {
+    return _controller;
+  }
+
   VideoPlayerValue get value {
     return _controller.value;
+  }
+
+  Future<double> get progress {
+    if (active && _controller.value.initialized) {
+      return _controller.position.then((position) {
+        double duration = _controller.value.duration.inMilliseconds.toDouble();
+        return position.inMilliseconds.toDouble() / duration;
+      });
+    } else return Future<double>(() => 0);
   }
 
   void unload() {
@@ -97,8 +110,10 @@ class VideoScreenController {
           _controller.play();
         } else if (index == info.from) {
           paused = false;
-          _controller.pause();
-          _controller.seekTo(Duration.zero);
+          if (_controller.value.initialized) {
+            _controller.pause();
+            _controller.seekTo(Duration.zero);
+          }
         } else if (distance < -3 || distance > 5) {
           unload();
         }
@@ -133,9 +148,7 @@ class _VideoScreenState extends State<VideoScreen> {
   @override
   void initState() {
     super.initState();
-    _soundScrollController = new ScrollController(
-
-    );
+    _soundScrollController = new ScrollController();
   }
 
   Widget makeVideoButton({IconData icon, String text, Color color, VoidCallback callback}) {
@@ -167,14 +180,8 @@ class _VideoScreenState extends State<VideoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.controller.active) return makeEmptyVideo();
-
-    double progress = 0;
-    if (widget.controller.value.duration != null) {
-      progress = widget.controller.value.position.inMilliseconds
-        .toDouble() / widget.controller.value.duration.inMilliseconds
-        .toDouble();
-    }
+    if (!widget.controller.active || !widget.controller.value.initialized)
+      return makeEmptyVideo();
 
     Video video = widget.controller.video;
 
@@ -223,10 +230,8 @@ class _VideoScreenState extends State<VideoScreen> {
           alignment: Alignment.bottomCenter,
           child: SizedBox(
             height: 2,
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.transparent,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
+            child: LinearVideoProgressIndicator(
+              controller: widget.controller,
             )
           )
         ),

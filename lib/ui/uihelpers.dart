@@ -1,8 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutterclient/ui/video_screen.dart';
 import 'package:intl/intl.dart';
 
 enum NavInfoType {
-  Tab, Video
+  Tab,
+  Video
 }
 
 class NavInfo {
@@ -51,4 +56,49 @@ String compactNumber(int number) {
     decimalDigits: 0,
     symbol: ""
   ).format(number);
+}
+
+class LinearVideoProgressIndicator extends StatefulWidget {
+  final VideoScreenController controller;
+
+  LinearVideoProgressIndicator({@required this.controller});
+
+  _LinearVideoProgressIndicatorState createState() => _LinearVideoProgressIndicatorState();
+}
+
+class _LinearVideoProgressIndicatorState extends State<LinearVideoProgressIndicator> with SingleTickerProviderStateMixin {
+  Ticker _ticker;
+  double _progress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _ticker = createTicker((elapsed) {
+      widget.controller.progress.then((progress) {
+        if (progress != _progress) {
+          setState(() {
+            _progress = progress;
+          });
+        }
+      });
+    });
+
+    _ticker.start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LinearProgressIndicator(
+      value: _progress,
+      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      backgroundColor: Colors.transparent
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
 }

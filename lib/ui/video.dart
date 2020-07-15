@@ -27,6 +27,7 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
           }
         }
       """),
+      fetchPolicy: FetchPolicy.networkOnly,
       variables: {
         "count": count
       }
