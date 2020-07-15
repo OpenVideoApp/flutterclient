@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutterclient/tabs/video_screen.dart';
-import 'package:flutterclient/video.dart';
-import 'package:flutterclient/uihelpers.dart';
+import 'package:flutterclient/ui/video.dart';
+import 'package:flutterclient/ui/video_screen.dart';
+import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/logging.dart';
 
 class HomeTab extends StatefulWidget {
@@ -27,7 +27,10 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
 
-    fetchVideos(count: 5).then((videos) {
+    fetchVideos(
+      context,
+      count: 5
+    ).then((videos) {
       for (int video = 0; video < videos.length; video++) {
         setState(() {
           _videoControllers.add(VideoScreenController(
@@ -96,7 +99,7 @@ class _HomeTabState extends State<HomeTab> {
 
           if (_selectedPage > _videoControllers.length - 5) {
             // Load from the server if no unloaded videos are left
-            fetchVideos().then((videos) {
+            fetchVideos(context).then((videos) {
               setState(() {
                 _videoControllers.add(VideoScreenController(
                   index: _videoControllers.length,

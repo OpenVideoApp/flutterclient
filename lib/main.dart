@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutterclient/video.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/tabs/create.dart';
 import 'package:flutterclient/tabs/home.dart';
 import 'package:flutterclient/tabs/profile.dart';
-import 'package:flutterclient/themes.dart';
-import 'package:flutterclient/uihelpers.dart';
+import 'package:flutterclient/ui/themes.dart';
+import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 
 final _lightTheme = BaseTheme(
   isDark: false,
@@ -23,7 +22,7 @@ final _darkTheme = BaseTheme(
   accent1: Colors.grey
 ).themeData;
 
-final _graphqlClient = ValueNotifier(
+final graphqlClient = ValueNotifier(
   GraphQLClient(
     cache: InMemoryCache(),
     link: HttpLink(
@@ -31,6 +30,7 @@ final _graphqlClient = ValueNotifier(
     )
   )
 );
+
 
 void main() {
   runApp(OpenVideoApp());
@@ -40,12 +40,12 @@ class OpenVideoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GraphQLProvider(
-      client: _graphqlClient,
+      client: graphqlClient,
       child: MaterialApp(
         title: "OpenVideo",
         debugShowCheckedModeBanner: false,
-        home: MainScreen(),
-        theme: _lightTheme
+        theme: _lightTheme,
+        home: MainScreen()
       )
     );
   }
@@ -135,12 +135,12 @@ class _MainScreenState extends State<MainScreen> {
             HomeTab(
               shouldTriggerChange: _changeNotifier.stream
             ),
-            fetchVideo(),
+            Container(),
             _selectedTab == 2 ? CreateTab() : Container(),
             Container(
               color: Colors.red,
               alignment: Alignment.center,
-              child: Text("Hello :)")
+              child: Text("Chat")
             ),
             ProfileTab()
           ],

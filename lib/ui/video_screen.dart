@@ -4,8 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutterclient/uihelpers.dart';
-import 'package:flutterclient/video.dart';
+import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/video.dart';
 import 'package:flutterclient/logging.dart';
 
 class VideoScreenController {
@@ -133,7 +133,9 @@ class _VideoScreenState extends State<VideoScreen> {
   @override
   void initState() {
     super.initState();
-    _soundScrollController = new ScrollController();
+    _soundScrollController = new ScrollController(
+
+    );
   }
 
   Widget makeVideoButton({IconData icon, String text, Color color, VoidCallback callback}) {
@@ -174,6 +176,8 @@ class _VideoScreenState extends State<VideoScreen> {
         .toDouble();
     }
 
+    Video video = widget.controller.video;
+
     return fullscreenAspectRatio(
       context: context,
       aspectRatio: widget.controller.value.aspectRatio,
@@ -190,7 +194,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   onTap: () => setState(() => widget.controller.toggle()),
                   onDoubleTap: () {
                     setState(() {
-                      widget.controller.video.liked = true;
+                      video.liked = true;
                     });
                   },
                   child: widget.controller.createPlayer()
@@ -217,11 +221,13 @@ class _VideoScreenState extends State<VideoScreen> {
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.transparent,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            minHeight: 4
+          child: SizedBox(
+            height: 2,
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.transparent,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
+            )
           )
         ),
         Positioned(
@@ -254,11 +260,19 @@ class _VideoScreenState extends State<VideoScreen> {
                               child: SingleChildScrollView(
                                 controller: _soundScrollController,
                                 scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  widget.controller.video.sound.desc,
+                                child: DefaultTextStyle(
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 15
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment
+                                      .start,
+                                    children: <Widget>[
+                                      formatText("original sound - @${video
+                                        .sound.user.name}"),
+                                      Text(video.sound.desc)
+                                    ]
                                   )
                                 )
                               )
@@ -269,27 +283,25 @@ class _VideoScreenState extends State<VideoScreen> {
                     ),
                     makeVideoButton(
                       icon: Icons.favorite,
-                      text: compactNumber(widget.controller.video.likes),
-                      color: widget.controller.video.liked ? Colors.red : Colors
-                        .white,
+                      text: compactNumber(video.likes),
+                      color: video.liked ? Colors.red : Colors.white,
                       callback: () {
                         print("Liked a video");
                         setState(() {
-                          widget.controller.video.liked = !widget.controller
-                            .video.liked;
+                          video.liked = !video.liked;
                         });
                       }
                     ),
                     makeVideoButton(
                       icon: FontAwesome.comment_lines_solid,
-                      text: compactNumber(widget.controller.video.comments),
+                      text: compactNumber(video.comments),
                       callback: () {
                         print("Commented on a video");
                       }
                     ),
                     makeVideoButton(
                       icon: FontAwesome.share_solid,
-                      text: compactNumber(widget.controller.video.shares),
+                      text: compactNumber(video.shares),
                       callback: () {
                         print("Shared a video");
                       }
@@ -317,14 +329,14 @@ class _VideoScreenState extends State<VideoScreen> {
                         shape: BoxShape.circle,
                         image: DecorationImage(
                           fit: BoxFit.fill,
-                          image: NetworkImage("https://open-video.s3-ap-southeast-2.amazonaws.com/raphydaphy.jpg")
+                          image: NetworkImage(video.user.profilePictureUrl)
                         )
                       )
                     ),
                     Padding(
                       padding: EdgeInsets.all(5)
                     ),
-                    formatText("@raphydaphy \n4831 Followers")
+                    formatText("@${video.user.name} \n4983 Followers")
                   ]
                 )
               ),
