@@ -69,6 +69,7 @@ class LinearVideoProgressIndicator extends StatefulWidget {
 
   LinearVideoProgressIndicator({@required this.controller});
 
+  @override
   _LinearVideoProgressIndicatorState createState() =>
     _LinearVideoProgressIndicatorState();
 }

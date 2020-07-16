@@ -133,6 +133,112 @@ class VideoScreenController {
   }
 }
 
+Widget _makeVideoButton({IconData icon, double iconScale = 1, String text, Color color, VoidCallback callback}) {
+  if (color == null) color = Colors.white;
+  return GestureDetector(
+    onTap: callback,
+    child: Container(
+      padding: EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Transform.scale(
+            scale: iconScale,
+            child: Icon(
+              icon,
+              size: 35,
+              color: color
+            )
+          ),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15
+            )
+          )
+        ]
+      )
+    )
+  );
+}
+
+class LikeButton extends StatefulWidget {
+  final Video video;
+
+  LikeButton({@required this.video});
+
+  @override
+  _LikeButtonState createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<LikeButton>
+  with SingleTickerProviderStateMixin {
+  AnimationController _controller;
+  Animation<double> _growAnimation;
+
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300)
+    );
+
+    _growAnimation = TweenSequence<double>(
+      [
+        TweenSequenceItem(
+          tween: Tween(
+            begin: 1,
+            end: 1.2
+          ),
+          weight: 1
+        ),
+        TweenSequenceItem(
+          tween: Tween(
+            begin: 1.2,
+            end: 1
+          ),
+          weight: 2
+        )
+      ]
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0, 1)
+      )
+    );
+
+    widget.video.likeCallback = () {
+      _controller.forward(from: 0);
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (BuildContext context, Widget child) {
+        return _makeVideoButton(
+          icon: Icons.favorite,
+          iconScale: _growAnimation.value,
+          text: compactInt(widget.video.likes),
+          color: widget.video.liked ? Colors.red : Colors.white,
+          callback: () => setState(() {
+            widget.video.setLiked(!widget.video.liked);
+          })
+        );
+      }
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    widget.video.likeCallback = null;
+    super.dispose();
+  }
+}
+
 class VideoScreen extends StatefulWidget {
   final VideoScreenController controller;
 
@@ -149,33 +255,6 @@ class _VideoScreenState extends State<VideoScreen> {
   void initState() {
     super.initState();
     _soundScrollController = new ScrollController();
-  }
-
-  Widget makeVideoButton({IconData icon, String text, Color color, VoidCallback callback}) {
-    if (color == null) color = Colors.white;
-    return GestureDetector(
-      onTap: callback,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(10, 5, 10, 5),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            Icon(
-              icon,
-              size: 35,
-              color: color
-            ),
-            Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15
-              )
-            )
-          ]
-        )
-      )
-    );
   }
 
   @override
@@ -201,7 +280,7 @@ class _VideoScreenState extends State<VideoScreen> {
                   onTap: () => setState(() => widget.controller.toggle()),
                   onDoubleTap: () {
                     setState(() {
-                      video.liked = true;
+                      video.setLiked(true);
                     });
                   },
                   child: widget.controller.createPlayer()
@@ -275,25 +354,17 @@ class _VideoScreenState extends State<VideoScreen> {
                         )
                       )
                     ),
-                    makeVideoButton(
-                      icon: Icons.favorite,
-                      text: compactInt(video.likes),
-                      color: video.liked ? Colors.red : Colors.white,
-                      callback: () {
-                        print("Liked a video");
-                        setState(() {
-                          video.liked = !video.liked;
-                        });
-                      }
+                    LikeButton(
+                      video: video
                     ),
-                    makeVideoButton(
+                    _makeVideoButton(
                       icon: FontAwesome.comment_lines_solid,
                       text: compactInt(video.comments),
                       callback: () {
                         print("Commented on a video");
                       }
                     ),
-                    makeVideoButton(
+                    _makeVideoButton(
                       icon: FontAwesome.share_solid,
                       text: compactInt(video.shares),
                       callback: () {

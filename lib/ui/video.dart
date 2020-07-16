@@ -54,6 +54,7 @@ class Video {
   bool liked;
   Sound sound;
   User user;
+  VoidCallback likeCallback;
 
   Video({this.src, this.desc, this.likes, this.shares, this.comments, this.liked, this.sound, this.user});
 
@@ -68,6 +69,13 @@ class Video {
       sound: Sound.fromJson(json["sound"]),
       user: User.fromJson(json["user"])
     );
+  }
+
+  void setLiked(liked) {
+    this.liked = liked;
+    if (likeCallback != null) {
+      likeCallback();
+    }
   }
 }
 
