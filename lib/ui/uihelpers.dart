@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutterclient/ui/video_screen.dart';
-import 'package:intl/intl.dart';
 
 enum NavInfoType {
   Tab,
@@ -51,11 +50,18 @@ Widget formatText(String text) {
   );
 }
 
-String compactNumber(int number) {
-  return NumberFormat.compactCurrency(
-    decimalDigits: 0,
-    symbol: ""
-  ).format(number);
+final List<String> numberSuffixes = ["", "K", "M", "B", "T"];
+
+String compactInt(int number) => compactDouble(number.toDouble());
+
+String compactDouble(double number, {int iteration = 0}) {
+  double n = num.parse(number.toStringAsFixed(1));
+  if (n < 100 && n != n.toInt().toDouble()) {
+    return n.toString() + numberSuffixes[iteration];
+  } else if (n < 1000) {
+    return n.toInt().toString() + numberSuffixes[iteration];
+  }
+  return compactDouble(n / 1000, iteration: iteration + 1);
 }
 
 class LinearVideoProgressIndicator extends StatefulWidget {

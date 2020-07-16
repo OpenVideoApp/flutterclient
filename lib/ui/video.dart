@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutterclient/main.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 

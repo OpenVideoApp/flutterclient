@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';

@@ -1,5 +1,5 @@
 import 'package:camera/camera.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutterclient/ui/video_screen.dart';
 
 List<CameraDescription> cameras;

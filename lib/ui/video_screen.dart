@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:video_player/video_player.dart';
@@ -278,7 +277,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     ),
                     makeVideoButton(
                       icon: Icons.favorite,
-                      text: compactNumber(video.likes),
+                      text: compactInt(video.likes),
                       color: video.liked ? Colors.red : Colors.white,
                       callback: () {
                         print("Liked a video");
@@ -289,14 +288,14 @@ class _VideoScreenState extends State<VideoScreen> {
                     ),
                     makeVideoButton(
                       icon: FontAwesome.comment_lines_solid,
-                      text: compactNumber(video.comments),
+                      text: compactInt(video.comments),
                       callback: () {
                         print("Commented on a video");
                       }
                     ),
                     makeVideoButton(
                       icon: FontAwesome.share_solid,
-                      text: compactNumber(video.shares),
+                      text: compactInt(video.shares),
                       callback: () {
                         print("Shared a video");
                       }
