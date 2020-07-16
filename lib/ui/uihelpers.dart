@@ -63,10 +63,13 @@ class LinearVideoProgressIndicator extends StatefulWidget {
 
   LinearVideoProgressIndicator({@required this.controller});
 
-  _LinearVideoProgressIndicatorState createState() => _LinearVideoProgressIndicatorState();
+  _LinearVideoProgressIndicatorState createState() =>
+    _LinearVideoProgressIndicatorState();
 }
 
-class _LinearVideoProgressIndicatorState extends State<LinearVideoProgressIndicator> with SingleTickerProviderStateMixin {
+class _LinearVideoProgressIndicatorState
+  extends State<LinearVideoProgressIndicator>
+  with SingleTickerProviderStateMixin {
   Ticker _ticker;
   double _progress = 0;
 
@@ -99,6 +102,82 @@ class _LinearVideoProgressIndicatorState extends State<LinearVideoProgressIndica
   @override
   void dispose() {
     _ticker.dispose();
+    super.dispose();
+  }
+}
+
+class AutoScrollingText extends StatefulWidget {
+  final List<String> text;
+  final double speed;
+  final double padding;
+
+  AutoScrollingText({@required this.text, this.speed = 0.5, this.padding = 5});
+
+  @override
+  _AutoScrollingTextState createState() => _AutoScrollingTextState();
+}
+
+class _AutoScrollingTextState extends State<AutoScrollingText>
+  with SingleTickerProviderStateMixin {
+  GlobalKey _key = GlobalKey();
+  ScrollController _scrollController;
+  Ticker _ticker;
+  double _scrollPos = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = new ScrollController();
+    _ticker = createTicker((elapsed) => tick(elapsed));
+    _ticker.start();
+  }
+
+  void tick(Duration elapsed) {
+    final RenderBox renderBox = _key.currentContext.findRenderObject();
+    final size = renderBox.size;
+
+    _scrollController.jumpTo(_scrollPos);
+    _scrollPos += widget.speed;
+
+    if (_scrollPos > size.width / 3) {
+      _scrollPos = 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> lines = [];
+
+    for (var line in widget.text) {
+      lines.add(formatText(line));
+    }
+
+    var col = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: lines
+    );
+
+    var padding = Padding(
+      padding: EdgeInsets.only(left: widget.padding)
+    );
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      physics: NeverScrollableScrollPhysics(),
+      child: Row(
+        key: _key,
+        children: <Widget>[
+          col, padding, col, padding, col, padding
+        ]
+      )
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }

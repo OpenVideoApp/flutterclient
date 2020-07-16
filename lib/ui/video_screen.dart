@@ -77,7 +77,8 @@ class VideoScreenController {
         double duration = _controller.value.duration.inMilliseconds.toDouble();
         return position.inMilliseconds.toDouble() / duration;
       });
-    } else return Future<double>(() => 0);
+    } else
+      return Future<double>(() => 0);
   }
 
   void unload() {
@@ -262,24 +263,13 @@ class _VideoScreenState extends State<VideoScreen> {
                               size: 40
                             ),
                             Expanded(
-                              child: SingleChildScrollView(
-                                controller: _soundScrollController,
-                                scrollDirection: Axis.horizontal,
-                                child: DefaultTextStyle(
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment
-                                      .start,
-                                    children: <Widget>[
-                                      formatText("original sound - @${video
-                                        .sound.user.name}"),
-                                      Text(video.sound.desc)
-                                    ]
-                                  )
-                                )
+                              child: AutoScrollingText(
+                                speed: 0.5,
+                                padding: 15,
+                                text: <String>[
+                                  "original sound - @${video.sound.user.name}",
+                                  video.sound.desc
+                                ]
                               )
                             )
                           ]
