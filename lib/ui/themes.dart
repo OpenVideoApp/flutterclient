@@ -40,3 +40,15 @@ class BaseTheme {
     return t;
   }
 }
+
+final lightTheme = BaseTheme(
+  isDark: false,
+  bg1: Colors.white,
+  accent1: Colors.grey[600]
+).themeData;
+
+final darkTheme = BaseTheme(
+  isDark: true,
+  bg1: Colors.black,
+  accent1: Colors.grey
+).themeData;

@@ -220,7 +220,7 @@ class _LikeButtonState extends State<LikeButton>
       builder: (BuildContext context, Widget child) {
         return _makeVideoButton(
           icon: Icons.favorite,
-          iconScale: _growAnimation.value,
+          iconScale: _growAnimation. value,
           text: compactInt(widget.video.likes),
           color: widget.video.liked ? Colors.red : Colors.white,
           callback: () => setState(() {
