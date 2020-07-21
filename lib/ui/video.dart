@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutterclient/main.dart';
+import 'package:flutterclient/api/auth.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
