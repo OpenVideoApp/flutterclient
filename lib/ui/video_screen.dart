@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/api/video.dart';
@@ -14,6 +16,9 @@ class VideoScreenController {
   bool active;
   bool selected;
   bool paused;
+
+  DateTime startedPlayingAt;
+  int secondsWatched = 0;
 
   VideoPlayerController _controller;
   Future<void> future;
@@ -48,12 +53,16 @@ class VideoScreenController {
     if (active) {
       _controller.play();
       paused = false;
+      startedPlayingAt = DateTime.now();
     }
   }
 
   void pause({bool forced = false}) {
     if (active) {
       _controller.pause();
+      if (startedPlayingAt != null) {
+        secondsWatched += DateTime.now().difference(startedPlayingAt).inSeconds;
+      }
       if (!forced) paused = true;
     }
   }
@@ -107,12 +116,32 @@ class VideoScreenController {
       int distance = index - info.to;
       if (active) {
         if (selected && !paused) {
-          _controller.play();
+          play();
         } else if (index == info.from) {
           paused = false;
           if (_controller.value.initialized) {
-            _controller.pause();
+            pause(forced: true);
             _controller.seekTo(Duration.zero);
+
+            graphqlClient.value.mutate(MutationOptions(
+              documentNode: gql("""
+                mutation WatchVideo(\$videoId: String!, \$seconds: Int!) {
+                  watchVideo(videoId: \$videoId, seconds: \$seconds) {
+                    ... on WatchData {seconds}
+                    ... on APIError {error}
+                  }
+                }
+              """),
+              variables: {
+                "videoId": video.id,
+                "seconds": secondsWatched
+              }
+            )).then((result) {
+              var watch = result.data["watchVideo"];
+              if (watch["error"] != null) logger.w("Failed to add watch data:", watch["error"]);
+              else logger.i("Added watch data to video '${video.id}', bring total time to ${watch["seconds"]} seconds");
+            });
+            secondsWatched = 0;
           }
         } else if (distance < -3 || distance > 5) {
           unload();
@@ -124,9 +153,9 @@ class VideoScreenController {
     } else if (info.type == NavInfoType.Tab) {
       if (active && selected && !paused) {
         if (info.from == 0 && info.to != 0) {
-          _controller.pause();
+          pause(forced: true);
         } else if (info.to == 0 && info.from != 0) {
-          _controller.play();
+          play();
         }
       }
     }

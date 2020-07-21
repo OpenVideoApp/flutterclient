@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
+import 'package:flutterclient/logging.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
@@ -8,6 +9,7 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
       documentNode: gql("""
         query GetVideos(\$count: Int) {
           videos(count: \$count) {
+            id
             src
             desc
             likes
@@ -47,17 +49,18 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
 }
 
 class Video {
-  String src, desc;
+  String id, src, desc;
   int likes, shares, comments;
   bool liked;
   Sound sound;
   User user;
   VoidCallback likeCallback;
 
-  Video({this.src, this.desc, this.likes, this.shares, this.comments, this.liked, this.sound, this.user});
+  Video({this.id, this.src, this.desc, this.likes, this.shares, this.comments, this.liked, this.sound, this.user});
 
   factory Video.fromJson(Map<String, dynamic> json) {
     return new Video(
+      id: json["id"],
       src: json["src"],
       desc: json["desc"],
       likes: json["likes"],
@@ -70,6 +73,27 @@ class Video {
   }
 
   void setLiked(liked) {
+    if (liked != this.liked) {
+      graphqlClient.value.mutate(MutationOptions(
+        documentNode: gql("""
+          mutation LikeVideo(\$videoId: String!, \$remove: Boolean!) {
+            likeVideo(videoId: \$videoId, remove: \$remove) {
+              ... on APIResult {success}
+              ... on APIError {error}
+            }
+          }
+        """),
+        variables: {
+          "videoId": id,
+          "remove": !liked
+        }
+      )).then((result) {
+        var like = result.data["likeVideo"];
+        if (like["error"] != null) logger.w("Failed to like video:", like["error"]);
+        else if (like["success"]) logger.i("${liked ? "L" : "Unl"}iked video #$id");
+        else logger.i("Liking/Disliking video #$id had no effect");
+      });
+    }
     this.liked = liked;
     if (likeCallback != null) {
       likeCallback();
