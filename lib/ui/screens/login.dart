@@ -88,7 +88,8 @@ class _LoginScreenState extends State<LoginScreen> {
       var iosInfo = await deviceInfo.iosInfo;
       // TODO: correctly label ios devices
       return iosInfo.localizedModel;
-    } else return "Desktop";
+    } else
+      return "Desktop";
   }
 
   void signin() async {
@@ -151,95 +152,95 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Container(
-          alignment: Alignment.center,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.all(15),
-                  child: Text(
-                    "OpenVideo",
-                    style: Theme.of(context).textTheme.headline4
-                  )
-                ),
-                if (this.error != null) Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Text(
-                    this.error,
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 15
-                    )
-                  )
-                ),
-                Padding(
-                  padding: EdgeInsets.all(10),
-                  child: TextField(
-                    controller: _usernameController,
-                    autocorrect: false,
-                    decoration: InputDecoration(
-                      hintText: "Username",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15)
-                      )
-                    ),
-                  )
-                ),
-                Padding(
-                  padding: EdgeInsets.all(10),
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: !_passwordVisible,
-                    focusNode: _passwordFocus,
-                    decoration: InputDecoration(
-                      hintText: "Password",
-                      suffixIcon: !_passwordSelected ? null : GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
-                        child: Icon(
-                          _passwordVisible ? FontAwesome
-                            .eye_slash_solid : FontAwesome.eye_solid,
-                          size: 20
-                        )
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15)
-                      )
-                    ),
-                  )
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.all(15),
-                      child: RaisedButton(
-                        padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-                        onPressed: () => signin(),
-                        child: Text("Login")
-                      )
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(15),
-                      child: RaisedButton(
-                        padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-                        onPressed: () => signup(),
-                        child: Text("Create Account")
-                      )
-                    )
-                  ]
+    return SafeArea(
+      child: Container(
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(15),
+                child: Text(
+                  "OpenVideo",
+                  style: Theme
+                    .of(context)
+                    .textTheme
+                    .headline4
                 )
-              ]
-            )
+              ),
+              if (this.error != null) Padding(
+                padding: EdgeInsets.all(10),
+                child: Text(
+                  this.error,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 15
+                  )
+                )
+              ),
+              Padding(
+                padding: EdgeInsets.all(10),
+                child: TextField(
+                  controller: _usernameController,
+                  autocorrect: false,
+                  decoration: InputDecoration(
+                    hintText: "Username",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15)
+                    )
+                  ),
+                )
+              ),
+              Padding(
+                padding: EdgeInsets.all(10),
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: !_passwordVisible,
+                  focusNode: _passwordFocus,
+                  decoration: InputDecoration(
+                    hintText: "Password",
+                    suffixIcon: !_passwordSelected ? null : GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _passwordVisible = !_passwordVisible;
+                        });
+                      },
+                      child: Icon(
+                        _passwordVisible ? FontAwesome
+                          .eye_slash_solid : FontAwesome.eye_solid,
+                        size: 20
+                      )
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15)
+                    )
+                  ),
+                )
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Padding(
+                    padding: EdgeInsets.all(15),
+                    child: RaisedButton(
+                      padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
+                      onPressed: () => signin(),
+                      child: Text("Login")
+                    )
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(15),
+                    child: RaisedButton(
+                      padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
+                      onPressed: () => signup(),
+                      child: Text("Create Account")
+                    )
+                  )
+                ]
+              )
+            ]
           )
-
         )
       )
     );

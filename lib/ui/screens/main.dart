@@ -85,26 +85,33 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     ThemeData theme = _selectedTab == 0 ? darkTheme : Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.backgroundColor,
-      body: SafeArea(
-        child: IndexedStack(
-          children: <Widget>[
-            HomeTab(
-              shouldTriggerChange: _changeNotifier.stream
-            ),
-            Container(),
-            _selectedTab == 2 ? CreateTab() : Container(),
-            Container(
-              color: Colors.red,
-              alignment: Alignment.center,
-              child: Text("Chat")
-            ),
-            ProfileTab()
-          ],
-          index: _selectedTab
+      body: NotificationListener(
+        onNotification: (notification) {
+          return false;
+        },
+        child: Scaffold(
+          backgroundColor: theme.backgroundColor,
+          body: SafeArea(
+            child: IndexedStack(
+              children: <Widget>[
+                HomeTab(
+                  shouldTriggerChange: _changeNotifier.stream
+                ),
+                Container(),
+                _selectedTab == 2 ? CreateTab() : Container(),
+                Container(
+                  color: Colors.red,
+                  alignment: Alignment.center,
+                  child: Text("Chat")
+                ),
+                ProfileTab()
+              ],
+              index: _selectedTab
+            )
+          ),
+          bottomNavigationBar: _navBar()
         )
-      ),
-      bottomNavigationBar: _navBar()
+      )
     );
   }
 

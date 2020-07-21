@@ -120,6 +120,7 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
             setState(() {
               loggedIn = true;
             });
+            return true;
           }
           return false;
         }

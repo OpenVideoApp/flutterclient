@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutterclient/ui/video_screen.dart';
+import 'package:flutterclient/ui/widget/video_screen.dart';
 
 enum NavInfoType {
   Tab,

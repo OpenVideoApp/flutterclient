@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutterclient/api/video.dart';
-import 'package:flutterclient/ui/video_screen.dart';
+import 'package:flutterclient/ui/widget/video_screen.dart';
+import 'package:flutterclient/ui/widget/comments_popup.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/logging.dart';
 
@@ -21,6 +22,7 @@ class _HomeTabState extends State<HomeTab> {
   List<VideoScreenController> _videoControllers = [];
   PageController _pageController;
   int _selectedPage = 0;
+  bool _commentsVisible = false;
 
   @override
   void initState() {
@@ -78,40 +80,52 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    return PageView(
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      children: getVideos(),
-      onPageChanged: (page) {
-        setState(() {
-          if (_selectedPage != page) {
-            NavInfo info = new NavInfo(
-              type: NavInfoType.Video,
-              from: _selectedPage,
-              to: page
-            );
-            // TODO: only update where necessary
-            for (int video = 0; video < _videoControllers.length; video++) {
-              _videoControllers[video].update(info);
+    return NotificationListener(
+      onNotification: (notification) {
+        if (notification is CommentsPopupNotification) {
+          setState(() {
+            _commentsVisible = notification.visible;
+          });
+          return true;
+        }
+        return false;
+      },
+      child: PageView(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        children: getVideos(),
+        physics: _commentsVisible ? NeverScrollableScrollPhysics() : PageScrollPhysics(),
+        onPageChanged: (page) {
+          setState(() {
+            if (_selectedPage != page) {
+              NavInfo info = new NavInfo(
+                type: NavInfoType.Video,
+                from: _selectedPage,
+                to: page
+              );
+              // TODO: only update where necessary
+              for (int video = 0; video < _videoControllers.length; video++) {
+                _videoControllers[video].update(info);
+              }
             }
-          }
 
-          if (_selectedPage > _videoControllers.length - 5) {
-            // Load from the server if no unloaded videos are left
-            fetchVideos(context).then((videos) {
-              setState(() {
-                _videoControllers.add(VideoScreenController(
-                  index: _videoControllers.length,
-                  video: videos[0],
-                  callback: () => setState(() {})
-                ));
+            if (_selectedPage > _videoControllers.length - 5) {
+              // Load from the server if no unloaded videos are left
+              fetchVideos(context).then((videos) {
+                setState(() {
+                  _videoControllers.add(VideoScreenController(
+                    index: _videoControllers.length,
+                    video: videos[0],
+                    callback: () => setState(() {})
+                  ));
+                });
               });
-            });
-          }
+            }
 
-          _selectedPage = page;
-        });
-      }
+            _selectedPage = page;
+          });
+        }
+      )
     );
   }
 

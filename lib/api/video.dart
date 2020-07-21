@@ -49,6 +49,25 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
   return videos;
 }
 
+class Comment {
+  String id, body;
+  int likes;
+  bool liked;
+  User user;
+
+  Comment({this.id, this.body, this.likes, this.liked, this.user});
+  
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    return new Comment(
+      id: json["id"],
+      body: json["body"],
+      likes: json["likes"],
+      liked: json["liked"],
+      user: User.fromJson(json["user"])
+    );
+  }
+}
+
 class Video {
   String id, src, desc;
   int likes, shares, comments;

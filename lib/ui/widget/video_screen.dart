@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/api/video.dart';
 import 'package:flutterclient/logging.dart';
+import 'package:flutterclient/ui/widget/comments_popup.dart';
 
 class VideoScreenController {
   final int index;
@@ -61,7 +62,10 @@ class VideoScreenController {
     if (active) {
       _controller.pause();
       if (startedPlayingAt != null) {
-        secondsWatched += DateTime.now().difference(startedPlayingAt).inSeconds;
+        secondsWatched += DateTime
+          .now()
+          .difference(startedPlayingAt)
+          .inSeconds;
       }
       if (!forced) paused = true;
     }
@@ -138,8 +142,11 @@ class VideoScreenController {
               }
             )).then((result) {
               var watch = result.data["watchVideo"];
-              if (watch["error"] != null) logger.w("Failed to add watch data:", watch["error"]);
-              else logger.i("Added watch data to video '${video.id}', bring total time to ${watch["seconds"]} seconds");
+              if (watch["error"] != null)
+                logger.w("Failed to add watch data:", watch["error"]);
+              else
+                logger.i("Added watch data to video '${video
+                  .id}', bring total time to ${watch["seconds"]} seconds");
             });
             secondsWatched = 0;
           }
@@ -249,12 +256,13 @@ class _LikeButtonState extends State<LikeButton>
       builder: (BuildContext context, Widget child) {
         return _makeVideoButton(
           icon: Icons.favorite,
-          iconScale: _growAnimation. value,
+          iconScale: _growAnimation.value,
           text: compactInt(widget.video.likes),
           color: widget.video.liked ? Colors.red : Colors.white,
-          callback: () => setState(() {
-            widget.video.setLiked(!widget.video.liked);
-          })
+          callback: () =>
+            setState(() {
+              widget.video.setLiked(!widget.video.liked);
+            })
         );
       }
     );
@@ -279,11 +287,56 @@ class VideoScreen extends StatefulWidget {
 
 class _VideoScreenState extends State<VideoScreen> {
   ScrollController _soundScrollController;
+  PersistentBottomSheetController _commentSheetController;
 
   @override
   void initState() {
     super.initState();
     _soundScrollController = new ScrollController();
+  }
+
+  void showComments() {
+    if (_commentSheetController != null) return;
+
+    var topScaffold = Scaffold.of(Scaffold
+      .of(context)
+      .context);
+
+    CommentsPopupNotification().dispatch(context);
+    _commentSheetController = topScaffold.showBottomSheet(
+        (context) {
+        return NotificationListener(
+          onNotification: (notification) {
+            if (notification is CommentsPopupNotification) {
+              _commentSheetController.close();
+              return true;
+            } else
+              return false;
+          },
+          child: CommentsPopup(widget.controller.video)
+        );
+      },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(15),
+          topRight: Radius.circular(15)
+        )
+      ),
+      backgroundColor: Colors.white
+    );
+
+    _commentSheetController.closed.then((_) {
+      _commentSheetController = null;
+      CommentsPopupNotification(visible: false).dispatch(context);
+    });
+  }
+
+  bool canInteract() {
+    if (_commentSheetController != null) {
+      _commentSheetController.close();
+      return false;
+    } else
+      return true;
   }
 
   @override
@@ -293,6 +346,7 @@ class _VideoScreenState extends State<VideoScreen> {
 
     Video video = widget.controller.video;
 
+    // TODO: video gets pushed up when keyboard is opened
     return fullscreenAspectRatio(
       context: context,
       aspectRatio: widget.controller.value.aspectRatio,
@@ -306,8 +360,12 @@ class _VideoScreenState extends State<VideoScreen> {
                 height: widget.controller.value.size.height,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: () => setState(() => widget.controller.toggle()),
+                  onTap: () {
+                    if (!canInteract()) return;
+                    setState(() => widget.controller.toggle());
+                  },
                   onDoubleTap: () {
+                    if (!canInteract()) return;
                     setState(() {
                       video.setLiked(true);
                     });
@@ -331,7 +389,10 @@ class _VideoScreenState extends State<VideoScreen> {
               color: Colors.white,
               size: 100
             ),
-            onTap: () => setState(() => widget.controller.toggle()),
+            onTap: () {
+              if (!canInteract()) return;
+              setState(() => widget.controller.toggle());
+            }
           ),
         ),
         Align(
@@ -389,9 +450,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     _makeVideoButton(
                       icon: FontAwesome.comment_lines_solid,
                       text: compactInt(video.comments),
-                      callback: () {
-                        print("Commented on a video");
-                      }
+                      callback: showComments
                     ),
                     _makeVideoButton(
                       icon: FontAwesome.share_solid,
@@ -412,6 +471,7 @@ class _VideoScreenState extends State<VideoScreen> {
             children: <Widget>[
               GestureDetector(
                 onTap: () {
+                  if (!canInteract()) return;
                   print("Clicked a profile");
                 },
                 child: Row(
@@ -436,6 +496,7 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
               GestureDetector(
                 onTap: () {
+                  if (!canInteract()) return;
                   print("Reported a Video");
                 },
                 child: Icon(
