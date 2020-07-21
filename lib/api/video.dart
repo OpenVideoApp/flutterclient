@@ -14,6 +14,7 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
             desc
             likes
             comments
+            liked
             sound {
               user {
                 name
@@ -66,7 +67,7 @@ class Video {
       likes: json["likes"],
       shares: 0,
       comments: json["comments"],
-      liked: false,
+      liked: json["liked"],
       sound: Sound.fromJson(json["sound"]),
       user: User.fromJson(json["user"])
     );
@@ -74,6 +75,8 @@ class Video {
 
   void setLiked(liked) {
     if (liked != this.liked) {
+      if (liked) this.likes++;
+      else this.likes--;
       graphqlClient.value.mutate(MutationOptions(
         documentNode: gql("""
           mutation LikeVideo(\$videoId: String!, \$remove: Boolean!) {

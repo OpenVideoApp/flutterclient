@@ -84,10 +84,16 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
               });
             }
           });
+        } else {
+          setState(() {
+            loading = false;
+          });
         }
       });
     } else {
-      loading = false;
+      setState(() {
+        loading = false;
+      });
     }
   }
 
