@@ -32,6 +32,7 @@ class OpenVideoScreen extends StatefulWidget {
 }
 
 class _OpenVideoScreen extends State<OpenVideoScreen> {
+  bool loading = true;
   bool loggedIn = false;
 
   @override
@@ -60,6 +61,9 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
             )
           ).then((result) {
             if (result.hasException) {
+              setState(() {
+                loading = false;
+              });
               return logger.e("Failed to validate login: ${result.exception}");
             }
             var user = result.data["me"];
@@ -68,31 +72,51 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
               prefs.remove("username").then((_) {
                 prefs.remove("password");
               });
+              AuthInfo.instance().set(null, null);
+              setState(() {
+                loading = false;
+              });
             } else {
               logger.i("Logged in as ${user["displayName"]}");
               setState(() {
+                loading = false;
                 loggedIn = true;
               });
             }
           });
         }
       });
+    } else {
+      loading = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loggedIn) return MainScreen();
-    else return NotificationListener(
-      child: LoginScreen(),
-      onNotification: (notification) {
-        if (notification is LoggedInNotification) {
-          setState(() {
-            loggedIn = true;
-          });
-        }
-        return false;
-      }
+    if (loading) return Container(
+      color: Colors.white,
+      alignment: Alignment.center,
+      child: Text(
+        "OpenVideo",
+        style: Theme
+          .of(context)
+          .textTheme
+          .headline3
+      )
     );
+    if (loggedIn)
+      return MainScreen();
+    else
+      return NotificationListener(
+        child: LoginScreen(),
+        onNotification: (notification) {
+          if (notification is LoggedInNotification) {
+            setState(() {
+              loggedIn = true;
+            });
+          }
+          return false;
+        }
+      );
   }
 }

@@ -12,8 +12,6 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
             desc
             likes
             comments
-            shares
-            liked
             sound {
               user {
                 name
@@ -22,7 +20,7 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
             }
             user {
               name
-              profilePicture
+              profilePicURL
             }
           }
         }
@@ -63,9 +61,9 @@ class Video {
       src: json["src"],
       desc: json["desc"],
       likes: json["likes"],
-      shares: json["shares"],
+      shares: 0,
       comments: json["comments"],
-      liked: json["liked"],
+      liked: false,
       sound: Sound.fromJson(json["sound"]),
       user: User.fromJson(json["user"])
     );
@@ -96,15 +94,15 @@ class Sound {
 class User {
   String name;
   String displayName;
-  String profilePictureUrl;
+  String profilePicURL;
 
-  User({this.name, this.displayName, this.profilePictureUrl});
+  User({this.name, this.displayName, this.profilePicURL});
 
   factory User.fromJson(Map<String, dynamic> json) {
     return new User(
       name: json["name"],
       displayName: json["displayName"],
-      profilePictureUrl: json["profilePicture"]
+      profilePicURL: json["profilePicURL"]
     );
   }
 }

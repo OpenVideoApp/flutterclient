@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
-import 'package:flutterclient/ui/video.dart';
+import 'package:flutterclient/api/video.dart';
 import 'package:flutterclient/logging.dart';
 
 class VideoScreenController {
@@ -394,7 +394,7 @@ class _VideoScreenState extends State<VideoScreen> {
                         shape: BoxShape.circle,
                         image: DecorationImage(
                           fit: BoxFit.fill,
-                          image: NetworkImage(video.user.profilePictureUrl)
+                          image: NetworkImage(video.user.profilePicURL)
                         )
                       )
                     ),

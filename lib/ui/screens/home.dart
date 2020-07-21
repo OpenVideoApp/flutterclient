@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutterclient/ui/video.dart';
+import 'package:flutterclient/api/video.dart';
 import 'package:flutterclient/ui/video_screen.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/logging.dart';

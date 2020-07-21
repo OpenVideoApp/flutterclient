@@ -163,10 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: EdgeInsets.all(15),
                   child: Text(
                     "OpenVideo",
-                    style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline4
+                    style: Theme.of(context).textTheme.headline4
                   )
                 ),
                 if (this.error != null) Padding(
