@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
+import 'package:flutterclient/ui/widget/user_profile.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
@@ -476,7 +477,10 @@ class _VideoScreenState extends State<VideoScreen> {
                 },
                 child: Row(
                   children: <Widget>[
-                    video.user.createIcon(40),
+                    UserProfileIcon(
+                      user: video.user,
+                      size: 40
+                    ),
                     Padding(
                       padding: EdgeInsets.all(5)
                     ),

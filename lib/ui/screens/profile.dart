@@ -3,44 +3,8 @@ import 'package:flutterclient/api/user.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/widget/user_profile.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-
-class ProfileStatButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final String value, type;
-
-  ProfileStatButton({this.onTap, this.value, this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: this.onTap,
-      child: Container(
-        color: Colors.white,
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.only(bottom: 2),
-              child: Text(
-                this.value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold
-                )
-              )
-            ),
-            Text(
-              this.type,
-              style: TextStyle(
-                fontSize: 15
-              )
-            )
-          ]
-        )
-      )
-    );
-  }
-}
 
 class ProfileTab extends StatefulWidget {
   @override
@@ -69,6 +33,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   name
                   displayName
                   profilePicURL
+                  following
+                  followers
                   likes
                 } ... on APIError {error}
               }
@@ -88,20 +54,10 @@ class _ProfileTabState extends State<ProfileTab> {
           var user = User.fromJson(me);
           if (user.displayName.length == 0) user.displayName = user.name;
 
-          var dividerColor = Color.fromRGBO(0, 0, 0, 0.5);
-
           var divider = Divider(
             height: 0.5,
             thickness: 0.5,
-            color: dividerColor
-          );
-
-          var verticalDivider = VerticalDivider(
-            thickness: 0.7,
-            width: 35,
-            color: dividerColor,
-            indent: 15,
-            endIndent: 15
+            color: Color.fromRGBO(0, 0, 0, 0.5)
           );
 
           return Column(
@@ -148,52 +104,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 )
               ),
               divider,
-              Container(
-                alignment: Alignment.center,
-                padding: EdgeInsets.all(10),
-                child: user.createIcon(125)
-              ),
-              Padding(
-                padding: EdgeInsets.all(5),
-                child: Text(
-                  "@${user.name}",
-                  style: theme.textTheme.headline6.copyWith(
-                    fontWeight: FontWeight.bold
-                  )
-                )
-              ),
-              Container(
-                padding: EdgeInsets.all(15),
-                child: IntrinsicHeight(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      ProfileStatButton(
-                        onTap: () {
-                          logger.i("Tapped Following");
-                        },
-                        value: compactInt(126),
-                        type: "Following"
-                      ),
-                      verticalDivider,
-                      ProfileStatButton(
-                        onTap: () {
-                          logger.i("Tapped Followers");
-                        },
-                        value: compactInt(1834),
-                        type: "Followers"
-                      ),
-                      verticalDivider,
-                      ProfileStatButton(
-                        onTap: () {
-                          logger.i("Tapped Likes");
-                        },
-                        value: compactInt(user.likes),
-                        type: "Likes"
-                      )
-                    ]
-                  )
-                )
+              UserOverview(
+                user: user
               ),
               Container(
                 padding: EdgeInsets.only(top: 10, bottom: 10),

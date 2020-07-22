@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
+import 'package:flutterclient/ui/widget/user_profile.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/api/video.dart';
@@ -89,23 +90,13 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
   }
 }
 
-class SingleComment extends StatefulWidget {
+class SingleComment extends StatelessWidget {
   final Comment comment;
-
   SingleComment(this.comment);
 
   @override
-  _SingleCommentState createState() => _SingleCommentState();
-}
-
-class _SingleCommentState extends State<SingleComment> {
-  @override
   Widget build(BuildContext context) {
-    var themeColor = Theme
-      .of(context)
-      .textTheme
-      .bodyText1
-      .color;
+    var themeColor = Theme.of(context).textTheme.bodyText1.color;
     return Container(
       padding: EdgeInsets.fromLTRB(5, 10, 5, 10),
       child: DefaultTextStyle(
@@ -118,7 +109,10 @@ class _SingleCommentState extends State<SingleComment> {
           children: <Widget>[
             Padding(
               padding: EdgeInsets.fromLTRB(5, 5, 10, 5),
-              child: widget.comment.user.createIcon(40)
+              child: UserProfileIcon(
+                user: this.comment.user,
+                size: 40
+              )
             ),
             Expanded(
               flex: 2,
@@ -129,17 +123,17 @@ class _SingleCommentState extends State<SingleComment> {
                   Padding(
                     padding: EdgeInsets.fromLTRB(0, 0, 0, 3),
                     child: Text(
-                      widget.comment.user.name,
+                      this.comment.user.name,
                       style: TextStyle(
                         fontWeight: FontWeight.bold
                       )
                     )
                   ),
-                  Text(widget.comment.body)
+                  Text(this.comment.body)
                 ]
               )
             ),
-            CommentLikeButton(widget.comment)
+            CommentLikeButton(this.comment)
           ]
         )
       )
