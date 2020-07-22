@@ -118,21 +118,7 @@ class _SingleCommentState extends State<SingleComment> {
           children: <Widget>[
             Padding(
               padding: EdgeInsets.fromLTRB(5, 5, 10, 5),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.grey,
-                    width: 0.5
-                  ),
-                  image: DecorationImage(
-                    fit: BoxFit.fill,
-                    image: NetworkImage(widget.comment.user.profilePicURL)
-                  )
-                )
-              )
+              child: widget.comment.user.createIcon(40)
             ),
             Expanded(
               flex: 2,

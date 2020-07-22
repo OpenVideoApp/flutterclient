@@ -476,17 +476,7 @@ class _VideoScreenState extends State<VideoScreen> {
                 },
                 child: Row(
                   children: <Widget>[
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          fit: BoxFit.fill,
-                          image: NetworkImage(video.user.profilePicURL)
-                        )
-                      )
-                    ),
+                    video.user.createIcon(40),
                     Padding(
                       padding: EdgeInsets.all(5)
                     ),

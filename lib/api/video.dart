@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:flutterclient/api/user.dart';
 
 Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
   QueryResult result = await graphqlClient.value.query(
@@ -56,7 +57,7 @@ class Comment {
   User user;
 
   Comment({this.id, this.body, this.likes, this.liked, this.user});
-  
+
   factory Comment.fromJson(Map<String, dynamic> json) {
     return new Comment(
       id: json["id"],
@@ -94,8 +95,10 @@ class Video {
 
   void setLiked(liked) {
     if (liked != this.liked) {
-      if (liked) this.likes++;
-      else this.likes--;
+      if (liked)
+        this.likes++;
+      else
+        this.likes--;
       graphqlClient.value.mutate(MutationOptions(
         documentNode: gql("""
           mutation LikeVideo(\$videoId: String!, \$remove: Boolean!) {
@@ -111,9 +114,12 @@ class Video {
         }
       )).then((result) {
         var like = result.data["likeVideo"];
-        if (like["error"] != null) logger.w("Failed to like video:", like["error"]);
-        else if (like["success"]) logger.i("${liked ? "L" : "Unl"}iked video #$id");
-        else logger.i("Liking/Disliking video #$id had no effect");
+        if (like["error"] != null)
+          logger.w("Failed to like video:", like["error"]);
+        else if (like["success"])
+          logger.i("${liked ? "L" : "Unl"}iked video #$id");
+        else
+          logger.i("Liking/Disliking video #$id had no effect");
       });
     }
     this.liked = liked;
@@ -133,22 +139,6 @@ class Sound {
     return new Sound(
       desc: json["desc"],
       user: User.fromJson(json["user"])
-    );
-  }
-}
-
-class User {
-  String name;
-  String displayName;
-  String profilePicURL;
-
-  User({this.name, this.displayName, this.profilePicURL});
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return new User(
-      name: json["name"],
-      displayName: json["displayName"],
-      profilePicURL: json["profilePicURL"]
     );
   }
 }

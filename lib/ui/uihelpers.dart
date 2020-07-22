@@ -56,11 +56,12 @@ String compactInt(int number) => compactDouble(number.toDouble());
 
 String compactDouble(double number, {int iteration = 0}) {
   double n = num.parse(number.toStringAsFixed(1));
-  if (n < 100 && n != n.toInt().toDouble()) {
+  bool isInt = n != n.toInt().toDouble();
+  if (n < 100 && isInt) {
     return n.toString() + numberSuffixes[iteration];
   } else if (n < 1000) {
     return n.toInt().toString() + numberSuffixes[iteration];
-  }
+  } else if (n < 10000 && iteration == 0) return n.toInt().toString();
   return compactDouble(n / 1000, iteration: iteration + 1);
 }
 
@@ -186,5 +187,44 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
     _ticker.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+}
+
+class BorderedFlatButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final Color textColor, backgroundColor, borderColor;
+  final double width, height;
+  final EdgeInsets padding;
+  final EdgeInsets margin;
+  final Widget text;
+
+  BorderedFlatButton({
+    @required this.onTap,
+    @required this.text,
+    this.textColor = Colors.black,
+    this.backgroundColor = Colors.white,
+    this.borderColor = Colors.black,
+    this.width, this.height,
+    this.padding = EdgeInsets.zero,
+    this.margin = EdgeInsets.zero
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: this.onTap,
+      child: Container(
+        width: this.width,
+        height: this.height,
+        padding: this.padding,
+        margin: this.margin,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: this.backgroundColor,
+          border: Border.all(color: this.borderColor)
+        ),
+        child: text
+      )
+    );
   }
 }
