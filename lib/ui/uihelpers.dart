@@ -6,7 +6,8 @@ import 'package:flutterclient/ui/widget/video_screen.dart';
 
 enum NavInfoType {
   Tab,
-  Video
+  Video,
+  Profile
 }
 
 class NavInfo {
@@ -227,4 +228,22 @@ class BorderedFlatButton extends StatelessWidget {
       )
     );
   }
+}
+
+PageRouteBuilder zoomTo(Widget Function(BuildContext, Animation<double>, Animation<double>) pageBuilder) {
+  return PageRouteBuilder(
+    pageBuilder: pageBuilder,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var tween = Tween(
+        begin: 0.0,
+        end: 1.0
+      );
+      var anim = animation.drive(tween);
+      return ScaleTransition(
+        scale: anim,
+        child: child
+      );
+    },
+    transitionDuration: Duration(milliseconds: 100)
+  );
 }

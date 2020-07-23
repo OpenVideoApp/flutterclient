@@ -1,9 +1,74 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/api/user.dart';
 import 'package:flutterclient/logging.dart';
+import 'package:flutterclient/ui/screens/profile.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+
+class ProfileUpdatedNotification extends Notification {}
+
+class ProfileScreenNotification extends Notification {
+  final bool opened;
+  ProfileScreenNotification({this.opened = true});
+}
+
+class FollowButton extends StatefulWidget {
+  final User user;
+
+  FollowButton(this.user);
+
+  _FollowButtonState createState() => _FollowButtonState();
+}
+
+class _FollowButtonState extends State<FollowButton> {
+  @override
+  Widget build(BuildContext context) {
+    bool following = widget.user.followedByYou;
+    return BorderedFlatButton(
+      onTap: () {
+        setState(() {
+          widget.user.followedByYou = !following;
+        });
+
+        var who = widget.user.name;
+
+        graphqlClient.value.mutate(MutationOptions(
+          documentNode: gql("""
+            mutation FollowUser(\$username: String!, \$remove: Boolean) {
+              followUser(username: \$username, remove: \$remove) {
+                ... on APIResult {success}
+                ... on APIError {error}
+              }
+            }
+          """),
+          variables: {
+            "username": widget.user.name,
+            "remove": following
+          }
+        )).then((result) {
+          if (result.hasException)
+            return logger.w("Failed to change following for '$who': ${result.exception}");
+          var res = result.data["followUser"];
+          if (res["error"] != null) return logger.w("Failed to change following for '$who': ${res["error"]}");
+          logger.i("${following ? "Unf" : "F"}ollowed '$who'!");
+          new ProfileUpdatedNotification().dispatch(context);
+        });
+      },
+      text: Text(
+        following ? "Following" : "Follow",
+        style: TextStyle(
+          fontWeight: FontWeight.w400
+        )
+      ),
+      backgroundColor: following ? Colors.white : Colors.pinkAccent,
+      borderColor: Color.fromRGBO(0, 0, 0, 0.5),
+      width: 100, height: 35,
+      margin: EdgeInsets.only(left: 5, right: 5)
+    );
+  }
+}
 
 class UserListItem extends StatelessWidget {
   final User user;
@@ -12,7 +77,11 @@ class UserListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var themeColor = Theme.of(context).textTheme.bodyText1.color;
+    var themeColor = Theme
+      .of(context)
+      .textTheme
+      .bodyText1
+      .color;
     return Container(
       padding: EdgeInsets.fromLTRB(5, 10, 5, 10),
       child: DefaultTextStyle(
@@ -31,18 +100,22 @@ class UserListItem extends StatelessWidget {
                 size: 40
               )
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  "@" + this.user.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500
-                  )
-                ),
-                Text(this.user.displayName)
-              ]
-            )
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    "@" + this.user.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500
+                    )
+                  ),
+                  Text(this.user.displayName)
+                ]
+              )
+            ),
+            if (this.user.name != AuthInfo.instance().username) FollowButton(this.user)
           ]
         )
       )
@@ -68,6 +141,7 @@ class UserList extends StatelessWidget {
                   name
                   displayName
                   profilePicURL
+                  followedByYou
                 }
               }
             """),
@@ -142,26 +216,12 @@ class UserOverview extends StatelessWidget {
   UserOverview({@required this.user});
 
   PageRouteBuilder _userListRoute({bool following = false}) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return UserList(
-          user: user,
-          following: following
-        );
-      },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var tween = Tween(
-          begin: 0.0,
-          end: 1.0
-        );
-        var anim = animation.drive(tween);
-        return ScaleTransition(
-          scale: anim,
-          child: child
-        );
-      },
-      transitionDuration: Duration(milliseconds: 100)
-    );
+    return zoomTo((context, animation, secondaryAnimation) {
+      return UserList(
+        user: this.user,
+        following: following
+      );
+    });
   }
 
   @override
@@ -181,14 +241,15 @@ class UserOverview extends StatelessWidget {
             alignment: Alignment.center,
             padding: EdgeInsets.all(10),
             child: UserProfileIcon(
-              user: user,
-              size: 125
+              user: this.user,
+              size: 125,
+              linkProfile: false
             )
           ),
           Padding(
             padding: EdgeInsets.all(5),
             child: Text(
-              "@${user.name}",
+              "@${this.user.name}",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500
@@ -205,9 +266,16 @@ class UserOverview extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(_userListRoute(
                         following: true
-                      ));
+                      )).then((_) {
+                        /*
+                        [ERROR:flutter/lib/ui/ui_dart_state.cc(157)] Unhandled Exception: Looking up a deactivated widget's ancestor is unsafe.
+                        At this point the state of the widget's element tree is no longer stable.
+                        To safely refer to a widget's ancestor in its dispose() method, save a reference to the ancestor by calling dependOnInheritedWidgetOfExactType() in the widget's didChangeDependencies() method.
+                         */
+                        new ProfileUpdatedNotification().dispatch(context);
+                      });
                     },
-                    value: compactInt(user.following),
+                    value: compactInt(this.user.following),
                     type: "Following"
                   ),
                   verticalDivider,
@@ -215,18 +283,20 @@ class UserOverview extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(_userListRoute(
                         following: false
-                      ));
+                      )).then((_) {
+                        new ProfileUpdatedNotification().dispatch(context);
+                      });
                     },
-                    value: compactInt(user.followers),
-                    type: "Followers"
+                    value: compactInt(this.user.followers),
+                    type: this.user.followers == 1 ? "Follower" : "Followers"
                   ),
                   verticalDivider,
                   ProfileStatButton(
                     onTap: () {
                       logger.i("Tapped Likes");
                     },
-                    value: compactInt(user.likes),
-                    type: "Likes"
+                    value: compactInt(this.user.likes),
+                    type: this.user.likes == 1 ? "Like" : "Likes"
                   )
                 ]
               )
@@ -241,24 +311,38 @@ class UserOverview extends StatelessWidget {
 class UserProfileIcon extends StatelessWidget {
   final User user;
   final double size;
+  final bool linkProfile;
+  final VoidCallback onPressed;
 
-  UserProfileIcon({@required this.user, this.size = 40});
+  UserProfileIcon({@required this.user, this.size = 40, this.linkProfile = true, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: this.size,
-      height: this.size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color.fromARGB(255, 238, 242, 228),
-        border: Border.all(
-          color: Colors.grey,
-          width: 1
-        ),
-        image: DecorationImage(
-          fit: BoxFit.fill,
-          image: NetworkImage(this.user.profilePicURL)
+    return GestureDetector(
+      onTap: () {
+        if (this.linkProfile) {
+          new ProfileScreenNotification(opened: true).dispatch(context);
+          Navigator.of(context).push(zoomTo((context, anim, secondAnim) {
+            return ProfilePage(this.user.name);
+          })).then((_) {
+            new ProfileScreenNotification(opened: false).dispatch(context);
+          });
+        } else if (this.onPressed != null) this.onPressed();
+      },
+      child: Container(
+        width: this.size,
+        height: this.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color.fromARGB(255, 238, 242, 228),
+          border: Border.all(
+            color: Colors.grey,
+            width: 1
+          ),
+          image: DecorationImage(
+            fit: BoxFit.fill,
+            image: NetworkImage(this.user.profilePicURL)
+          )
         )
       )
     );

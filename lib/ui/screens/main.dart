@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
+import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/themes.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/ui/screens/create.dart';
 import 'package:flutterclient/ui/screens/home.dart';
 import 'package:flutterclient/ui/screens/profile.dart';
+import 'package:flutterclient/ui/widget/user_profile.dart';
 
 class MainScreen extends StatefulWidget {
   MainScreen({Key key}) : super(key: key);
@@ -67,13 +70,11 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: theme.accentColor,
         onTap: (index) {
           setState(() {
-            _changeNotifier.sink.add(
-              NavInfo(
-                type: NavInfoType.Tab,
-                from: _selectedTab,
-                to: index
-              )
-            );
+            _changeNotifier.sink.add(NavInfo(
+              type: NavInfoType.Tab,
+              from: _selectedTab,
+              to: index
+            ));
             _selectedTab = index;
           });
         },
@@ -84,12 +85,21 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = _selectedTab == 0 ? darkTheme : Theme.of(context);
-    return Scaffold(
-      body: NotificationListener(
-        onNotification: (notification) {
-          return false;
-        },
-        child: Scaffold(
+    // Double scaffold allows the bottomSheet to display on top of bottomNavBar
+    return NotificationListener(
+      onNotification: (notification) {
+        if (notification is ProfileScreenNotification) {
+          logger.i("Profile screen ${notification.opened ? "opened" : "closed"}");
+          _changeNotifier.sink.add(NavInfo(
+            type: NavInfoType.Profile,
+            from: notification.opened ? _selectedTab : -1,
+            to: notification.opened ? -1 : _selectedTab
+          ));
+          return true;
+        } else return false;
+      },
+      child: Scaffold(
+        body: Scaffold(
           backgroundColor: theme.backgroundColor,
           body: SafeArea(
             child: IndexedStack(
@@ -104,7 +114,7 @@ class _MainScreenState extends State<MainScreen> {
                   alignment: Alignment.center,
                   child: Text("Chat")
                 ),
-                ProfileTab()
+                ProfileTab(AuthInfo.instance().username)
               ],
               index: _selectedTab
             )

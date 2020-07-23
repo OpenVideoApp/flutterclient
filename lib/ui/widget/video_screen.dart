@@ -28,13 +28,13 @@ class VideoScreenController {
   VoidCallback callback;
 
   VideoScreenController({
-    @required this.index,
-    @required this.video,
-    this.active = true,
-    this.selected = false,
-    this.paused = false,
-    this.callback
-  }) {
+                          @required this.index,
+                          @required this.video,
+                          this.active = true,
+                          this.selected = false,
+                          this.paused = false,
+                          this.callback
+                        }) {
     if (active) {
       init();
     }
@@ -53,14 +53,17 @@ class VideoScreenController {
 
   void play() {
     if (active) {
+      logger.i("Playing video #$index");
       _controller.play();
       paused = false;
       startedPlayingAt = DateTime.now();
-    }
+    } else
+      logger.w("Tried to play inactive video #$index");
   }
 
   void pause({bool forced = false}) {
     if (active) {
+      logger.i("Paused video #$index");
       _controller.pause();
       if (startedPlayingAt != null) {
         secondsWatched += DateTime
@@ -522,11 +525,11 @@ Widget makeEmptyVideo() {
 }
 
 Widget fullscreenAspectRatio({
-  BuildContext context,
-  double aspectRatio,
-  Widget Function(double width, double height) video,
-  List<Widget> stack
-}) {
+                               BuildContext context,
+                               double aspectRatio,
+                               Widget Function(double width, double height) video,
+                               List<Widget> stack
+                             }) {
   MediaQueryData query = MediaQuery.of(context);
 
   double width = query.size.width;

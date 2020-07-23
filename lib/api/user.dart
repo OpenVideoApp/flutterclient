@@ -1,10 +1,14 @@
+import 'package:flutterclient/api/apihelpers.dart';
+
 class User {
   String name, displayName, profilePicURL;
   int following, followers, likes;
+  bool followsYou, followedByYou;
 
   User({
     this.name, this.displayName, this.profilePicURL,
-    this.following, this.followers, this.likes
+    this.following, this.followers, this.likes,
+    this.followsYou, this.followedByYou
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -14,7 +18,9 @@ class User {
       profilePicURL: json["profilePicURL"],
       following: json["following"],
       followers: json["followers"],
-      likes: json["likes"]
+      likes: json["likes"],
+      followsYou: getOptionalBool(json, "followsYou"),
+      followedByYou: getOptionalBool(json, "followedByYou")
     );
   }
 }

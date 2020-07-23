@@ -7,7 +7,7 @@ final graphqlClient = new ValueNotifier(
   new GraphQLClient(
     cache: InMemoryCache(),
     link: new AuthInfoLink().concat(HttpLink(
-      uri: "http://192.168.0.220:3000/graphql"
+      uri: "http://openvideo-api.ddns.net:3000/graphql"
     ))
   )
 );

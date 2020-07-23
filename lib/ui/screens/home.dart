@@ -54,12 +54,25 @@ class _HomeTabState extends State<HomeTab> {
     });
 
     _streamSubscription = widget.shouldTriggerChange.listen((info) {
-      logger.i("Changed tab from ${info.from} to ${info.to}");
-      if ((info.from == 0 && info.to != 0) ||
-        (info.to == 0 && info.from != 0)) {
+      if (info.type == NavInfoType.Tab) {
+        logger.i("Changed tab from ${info.from} to ${info.to}");
+        if ((info.from == 0 && info.to != 0) ||
+          (info.to == 0 && info.from != 0)) {
+          setState(() {
+            if (_videoControllers.length > _selectedPage)
+              _videoControllers[_selectedPage].update(info);
+          });
+        }
+      } else if (info.type == NavInfoType.Profile) {
+        if (info.to != 0 && info.from != 0) return;
+        if (_selectedPage > _videoControllers.length) return;
+
+        var controller = _videoControllers[_selectedPage];
+        if (!controller.active) return;
+
         setState(() {
-          if (_videoControllers.length > _selectedPage)
-            _videoControllers[_selectedPage].update(info);
+          if (info.to == 0) controller.play();
+          else if (info.from == 0 && controller.isPlaying()) controller.pause(forced: true);
         });
       }
     });
