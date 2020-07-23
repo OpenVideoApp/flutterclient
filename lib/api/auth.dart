@@ -6,10 +6,9 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 final graphqlClient = new ValueNotifier(
   new GraphQLClient(
     cache: InMemoryCache(),
-    link: new AuthInfoLink().concat(HttpLink(
-      uri: "http://openvideo-api.ddns.net:3000/graphql"
-    ))
-  )
+    link: new AuthInfoLink()
+        .concat(HttpLink(uri: "http://openvideo-api.ddns.net:3000/graphql")),
+  ),
 );
 
 class AuthInfo {
@@ -30,24 +29,22 @@ class AuthInfo {
 
 class AuthInfoLink extends Link {
   AuthInfoLink()
-    : super(request: (Operation operation, [NextLink forward]) {
-    StreamController<FetchResult> controller;
+      : super(request: (Operation operation, [NextLink forward]) {
+          StreamController<FetchResult> controller;
 
-    Future<void> onListen() async {
-      var auth = AuthInfo.instance();
-      operation.setContext(<String, Map<String, String>>{
-        "headers": <String, String>{
-          "username": auth.username,
-          "token": auth.token
-        }
-      });
+          controller = StreamController<FetchResult>(onListen: () async {
+            var auth = AuthInfo.instance();
+            operation.setContext(<String, Map<String, String>>{
+              "headers": <String, String>{
+                "username": auth.username,
+                "token": auth.token
+              },
+            });
 
-      await controller.addStream(forward(operation));
-      await controller.close();
-    }
+            await controller.addStream(forward(operation));
+            await controller.close();
+          });
 
-    controller = StreamController<FetchResult>(onListen: onListen);
-
-    return controller.stream;
-  });
+          return controller.stream;
+        });
 }

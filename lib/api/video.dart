@@ -25,6 +25,7 @@ Future<List<Video>> fetchVideos(BuildContext context, {int count = 1}) async {
             user {
               name
               profilePicURL
+              followers
             }
           }
         }

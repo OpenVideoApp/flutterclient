@@ -28,17 +28,14 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
 
-    fetchVideos(
-      context,
-      count: 5
-    ).then((videos) {
+    fetchVideos(context, count: 5).then((videos) {
       for (int video = 0; video < videos.length; video++) {
         setState(() {
           _videoControllers.add(VideoScreenController(
             index: _videoControllers.length,
             video: videos[video],
             selected: _videoControllers.length == 0,
-            callback: () => setState(() => {})
+            callback: () => setState(() => {}),
           ));
         });
       }
@@ -57,7 +54,7 @@ class _HomeTabState extends State<HomeTab> {
       if (info.type == NavInfoType.Tab) {
         logger.i("Changed tab from ${info.from} to ${info.to}");
         if ((info.from == 0 && info.to != 0) ||
-          (info.to == 0 && info.from != 0)) {
+            (info.to == 0 && info.from != 0)) {
           setState(() {
             if (_videoControllers.length > _selectedPage)
               _videoControllers[_selectedPage].update(info);
@@ -71,8 +68,10 @@ class _HomeTabState extends State<HomeTab> {
         if (!controller.active) return;
 
         setState(() {
-          if (info.to == 0) controller.play();
-          else if (info.from == 0 && controller.isPlaying()) controller.pause(forced: true);
+          if (info.to == 0)
+            controller.play();
+          else if (info.from == 0 && controller.isPlaying())
+            controller.pause(forced: true);
         });
       }
     });
@@ -107,14 +106,16 @@ class _HomeTabState extends State<HomeTab> {
         controller: _pageController,
         scrollDirection: Axis.vertical,
         children: getVideos(),
-        physics: _commentsVisible ? NeverScrollableScrollPhysics() : PageScrollPhysics(),
+        physics: _commentsVisible
+            ? NeverScrollableScrollPhysics()
+            : PageScrollPhysics(),
         onPageChanged: (page) {
           setState(() {
             if (_selectedPage != page) {
               NavInfo info = new NavInfo(
                 type: NavInfoType.Video,
                 from: _selectedPage,
-                to: page
+                to: page,
               );
               // TODO: only update where necessary
               for (int video = 0; video < _videoControllers.length; video++) {
@@ -129,7 +130,7 @@ class _HomeTabState extends State<HomeTab> {
                   _videoControllers.add(VideoScreenController(
                     index: _videoControllers.length,
                     video: videos[0],
-                    callback: () => setState(() {})
+                    callback: () => setState(() {}),
                   ));
                 });
               });
@@ -137,8 +138,8 @@ class _HomeTabState extends State<HomeTab> {
 
             _selectedPage = page;
           });
-        }
-      )
+        },
+      ),
     );
   }
 

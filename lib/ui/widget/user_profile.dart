@@ -11,13 +11,16 @@ class ProfileUpdatedNotification extends Notification {}
 
 class ProfileScreenNotification extends Notification {
   final bool opened;
+
   ProfileScreenNotification({this.opened = true});
 }
 
 class FollowButton extends StatefulWidget {
   final User user;
+  final double width, height, fontSize;
 
-  FollowButton(this.user);
+  FollowButton(this.user,
+      {this.width = 100, this.height = 35, this.fontSize = 15});
 
   _FollowButtonState createState() => _FollowButtonState();
 }
@@ -34,7 +37,8 @@ class _FollowButtonState extends State<FollowButton> {
 
         var who = widget.user.name;
 
-        graphqlClient.value.mutate(MutationOptions(
+        graphqlClient.value
+            .mutate(MutationOptions(
           documentNode: gql("""
             mutation FollowUser(\$username: String!, \$remove: Boolean) {
               followUser(username: \$username, remove: \$remove) {
@@ -45,13 +49,17 @@ class _FollowButtonState extends State<FollowButton> {
           """),
           variables: {
             "username": widget.user.name,
-            "remove": following
-          }
-        )).then((result) {
+            "remove": following,
+          },
+        ))
+            .then((result) {
           if (result.hasException)
-            return logger.w("Failed to change following for '$who': ${result.exception}");
+            return logger.w(
+                "Failed to change following for '$who': ${result.exception}");
           var res = result.data["followUser"];
-          if (res["error"] != null) return logger.w("Failed to change following for '$who': ${res["error"]}");
+          if (res["error"] != null)
+            return logger
+                .w("Failed to change following for '$who': ${res["error"]}");
           logger.i("${following ? "Unf" : "F"}ollowed '$who'!");
           new ProfileUpdatedNotification().dispatch(context);
         });
@@ -59,13 +67,15 @@ class _FollowButtonState extends State<FollowButton> {
       text: Text(
         following ? "Following" : "Follow",
         style: TextStyle(
-          fontWeight: FontWeight.w400
-        )
+          fontWeight: FontWeight.w400,
+          fontSize: widget.fontSize,
+        ),
       ),
       backgroundColor: following ? Colors.white : Colors.pinkAccent,
       borderColor: Color.fromRGBO(0, 0, 0, 0.5),
-      width: 100, height: 35,
-      margin: EdgeInsets.only(left: 5, right: 5)
+      width: widget.width,
+      height: widget.height,
+      margin: EdgeInsets.only(left: 5, right: 5),
     );
   }
 }
@@ -77,17 +87,13 @@ class UserListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var themeColor = Theme
-      .of(context)
-      .textTheme
-      .bodyText1
-      .color;
+    var themeColor = Theme.of(context).textTheme.bodyText1.color;
     return Container(
       padding: EdgeInsets.fromLTRB(5, 10, 5, 10),
       child: DefaultTextStyle(
         style: TextStyle(
           color: themeColor,
-          fontSize: 15
+          fontSize: 15,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -97,8 +103,8 @@ class UserListItem extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(5, 5, 10, 5),
               child: UserProfileIcon(
                 user: this.user,
-                size: 40
-              )
+                size: 40,
+              ),
             ),
             Expanded(
               flex: 2,
@@ -108,17 +114,18 @@ class UserListItem extends StatelessWidget {
                   Text(
                     "@" + this.user.name,
                     style: TextStyle(
-                      fontWeight: FontWeight.w500
-                    )
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  Text(this.user.displayName)
-                ]
-              )
+                  Text(this.user.displayName),
+                ],
+              ),
             ),
-            if (this.user.name != AuthInfo.instance().username) FollowButton(this.user)
-          ]
-        )
-      )
+            if (this.user.name != AuthInfo.instance().username)
+              FollowButton(this.user)
+          ],
+        ),
+      ),
     );
   }
 }
@@ -146,8 +153,8 @@ class UserList extends StatelessWidget {
               }
             """),
             variables: {
-              "username": this.user.name
-            }
+              "username": this.user.name,
+            },
           ),
           builder: (result, {refetch, fetchMore}) {
             if (result.hasException) {
@@ -161,13 +168,13 @@ class UserList extends StatelessWidget {
               itemBuilder: (context, index) {
                 User follower = User.fromJson(followers[index]);
                 return UserListItem(follower);
-              }
+              },
             );
-          }
-        )
+          },
+        ),
       ),
       appBar: AppBar(
-        title: Text(following ? "Following" : "Followers")
+        title: Text(following ? "Following" : "Followers"),
       ),
     );
   }
@@ -193,19 +200,19 @@ class ProfileStatButton extends StatelessWidget {
                 this.value,
                 style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold
-                )
-              )
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             Text(
               this.type,
               style: TextStyle(
-                fontSize: 15
-              )
-            )
-          ]
-        )
-      )
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -219,7 +226,7 @@ class UserOverview extends StatelessWidget {
     return zoomTo((context, animation, secondaryAnimation) {
       return UserList(
         user: this.user,
-        following: following
+        following: following,
       );
     });
   }
@@ -231,7 +238,7 @@ class UserOverview extends StatelessWidget {
       width: 35,
       color: Color.fromRGBO(0, 0, 0, 0.5),
       indent: 15,
-      endIndent: 15
+      endIndent: 15,
     );
 
     return Container(
@@ -243,8 +250,8 @@ class UserOverview extends StatelessWidget {
             child: UserProfileIcon(
               user: this.user,
               size: 125,
-              linkProfile: false
-            )
+              linkProfile: false,
+            ),
           ),
           Padding(
             padding: EdgeInsets.all(5),
@@ -252,9 +259,9 @@ class UserOverview extends StatelessWidget {
               "@${this.user.name}",
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w500
-              )
-            )
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Container(
             padding: EdgeInsets.all(15),
@@ -263,32 +270,33 @@ class UserOverview extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   ProfileStatButton(
-                    onTap: () {
-                      Navigator.of(context).push(_userListRoute(
-                        following: true
-                      )).then((_) {
-                        /*
-                        [ERROR:flutter/lib/ui/ui_dart_state.cc(157)] Unhandled Exception: Looking up a deactivated widget's ancestor is unsafe.
-                        At this point the state of the widget's element tree is no longer stable.
-                        To safely refer to a widget's ancestor in its dispose() method, save a reference to the ancestor by calling dependOnInheritedWidgetOfExactType() in the widget's didChangeDependencies() method.
+                      onTap: () {
+                        Navigator.of(context)
+                            .push(_userListRoute(
+                          following: true,
+                        ))
+                            .then((_) {
+                          /*
+                          [ERROR:flutter/lib/ui/ui_dart_state.cc(157)] Unhandled Exception: Looking up a deactivated widget's ancestor is unsafe.
+                          At this point the state of the widget's element tree is no longer stable.
+                          To safely refer to a widget's ancestor in its dispose() method, save a reference to the ancestor by calling dependOnInheritedWidgetOfExactType() in the widget's didChangeDependencies() method.
                          */
-                        new ProfileUpdatedNotification().dispatch(context);
-                      });
-                    },
-                    value: compactInt(this.user.following),
-                    type: "Following"
-                  ),
+                          new ProfileUpdatedNotification().dispatch(context);
+                        });
+                      },
+                      value: compactInt(this.user.following),
+                      type: "Following"),
                   verticalDivider,
                   ProfileStatButton(
                     onTap: () {
-                      Navigator.of(context).push(_userListRoute(
-                        following: false
-                      )).then((_) {
+                      Navigator.of(context)
+                          .push(_userListRoute(following: false))
+                          .then((_) {
                         new ProfileUpdatedNotification().dispatch(context);
                       });
                     },
                     value: compactInt(this.user.followers),
-                    type: this.user.followers == 1 ? "Follower" : "Followers"
+                    type: this.user.followers == 1 ? "Follower" : "Followers",
                   ),
                   verticalDivider,
                   ProfileStatButton(
@@ -296,14 +304,14 @@ class UserOverview extends StatelessWidget {
                       logger.i("Tapped Likes");
                     },
                     value: compactInt(this.user.likes),
-                    type: this.user.likes == 1 ? "Like" : "Likes"
-                  )
-                ]
-              )
-            )
-          )
-        ]
-      )
+                    type: this.user.likes == 1 ? "Like" : "Likes",
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -314,7 +322,12 @@ class UserProfileIcon extends StatelessWidget {
   final bool linkProfile;
   final VoidCallback onPressed;
 
-  UserProfileIcon({@required this.user, this.size = 40, this.linkProfile = true, this.onPressed});
+  UserProfileIcon({
+    @required this.user,
+    this.size = 40,
+    this.linkProfile = true,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -337,14 +350,14 @@ class UserProfileIcon extends StatelessWidget {
           color: Color.fromARGB(255, 238, 242, 228),
           border: Border.all(
             color: Colors.grey,
-            width: 1
+            width: 1,
           ),
           image: DecorationImage(
             fit: BoxFit.fill,
-            image: NetworkImage(this.user.profilePicURL)
-          )
-        )
-      )
+            image: NetworkImage(this.user.profilePicURL),
+          ),
+        ),
+      ),
     );
   }
 }

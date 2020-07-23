@@ -28,13 +28,13 @@ class VideoScreenController {
   VoidCallback callback;
 
   VideoScreenController({
-                          @required this.index,
-                          @required this.video,
-                          this.active = true,
-                          this.selected = false,
-                          this.paused = false,
-                          this.callback
-                        }) {
+    @required this.index,
+    @required this.video,
+    this.active = true,
+    this.selected = false,
+    this.paused = false,
+    this.callback,
+  }) {
     if (active) {
       init();
     }
@@ -66,10 +66,7 @@ class VideoScreenController {
       logger.i("Paused video #$index");
       _controller.pause();
       if (startedPlayingAt != null) {
-        secondsWatched += DateTime
-          .now()
-          .difference(startedPlayingAt)
-          .inSeconds;
+        secondsWatched += DateTime.now().difference(startedPlayingAt).inSeconds;
       }
       if (!forced) paused = true;
     }
@@ -131,7 +128,8 @@ class VideoScreenController {
             pause(forced: true);
             _controller.seekTo(Duration.zero);
 
-            graphqlClient.value.mutate(MutationOptions(
+            graphqlClient.value
+                .mutate(MutationOptions(
               documentNode: gql("""
                 mutation WatchVideo(\$videoId: String!, \$seconds: Int!) {
                   watchVideo(videoId: \$videoId, seconds: \$seconds) {
@@ -142,15 +140,16 @@ class VideoScreenController {
               """),
               variables: {
                 "videoId": video.id,
-                "seconds": secondsWatched
-              }
-            )).then((result) {
+                "seconds": secondsWatched,
+              },
+            ))
+                .then((result) {
               var watch = result.data["watchVideo"];
               if (watch["error"] != null)
                 logger.w("Failed to add watch data:", watch["error"]);
               else
-                logger.i("Added watch data to video '${video
-                  .id}', bring total time to ${watch["seconds"]} seconds");
+                logger.i(
+                    "Added watch data to video '${video.id}', bring total time to ${watch["seconds"]} seconds");
             });
             secondsWatched = 0;
           }
@@ -173,7 +172,12 @@ class VideoScreenController {
   }
 }
 
-Widget _makeVideoButton({IconData icon, double iconScale = 1, String text, Color color, VoidCallback callback}) {
+Widget _makeVideoButton(
+    {IconData icon,
+    double iconScale = 1,
+    String text,
+    Color color,
+    VoidCallback callback}) {
   if (color == null) color = Colors.white;
   return GestureDetector(
     onTap: callback,
@@ -187,19 +191,19 @@ Widget _makeVideoButton({IconData icon, double iconScale = 1, String text, Color
             child: Icon(
               icon,
               size: 35,
-              color: color
-            )
+              color: color,
+            ),
           ),
           Text(
             text,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 15
-            )
-          )
-        ]
-      )
-    )
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
@@ -213,39 +217,31 @@ class LikeButton extends StatefulWidget {
 }
 
 class _LikeButtonState extends State<LikeButton>
-  with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   AnimationController _controller;
   Animation<double> _growAnimation;
 
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 300)
-    );
+    _controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
 
     _growAnimation = TweenSequence<double>(
       [
-        TweenSequenceItem(
-          tween: Tween(
-            begin: 1,
-            end: 1.2
-          ),
-          weight: 1
-        ),
+        TweenSequenceItem(tween: Tween(begin: 1, end: 1.2), weight: 1),
         TweenSequenceItem(
           tween: Tween(
             begin: 1.2,
-            end: 1
+            end: 1,
           ),
-          weight: 2
-        )
-      ]
+          weight: 2,
+        ),
+      ],
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Interval(0, 1)
-      )
+        curve: Interval(0, 1),
+      ),
     );
 
     widget.video.likeCallback = () {
@@ -263,12 +259,11 @@ class _LikeButtonState extends State<LikeButton>
           iconScale: _growAnimation.value,
           text: compactInt(widget.video.likes),
           color: widget.video.liked ? Colors.red : Colors.white,
-          callback: () =>
-            setState(() {
-              widget.video.setLiked(!widget.video.liked);
-            })
+          callback: () => setState(() {
+            widget.video.setLiked(!widget.video.liked);
+          }),
         );
-      }
+      },
     );
   }
 
@@ -302,13 +297,11 @@ class _VideoScreenState extends State<VideoScreen> {
   void showComments() {
     if (_commentSheetController != null) return;
 
-    var topScaffold = Scaffold.of(Scaffold
-      .of(context)
-      .context);
+    var topScaffold = Scaffold.of(Scaffold.of(context).context);
 
     CommentsPopupNotification().dispatch(context);
     _commentSheetController = topScaffold.showBottomSheet(
-        (context) {
+      (context) {
         return NotificationListener(
           onNotification: (notification) {
             if (notification is CommentsPopupNotification) {
@@ -317,16 +310,16 @@ class _VideoScreenState extends State<VideoScreen> {
             } else
               return false;
           },
-          child: CommentsPopup(widget.controller.video)
+          child: CommentsPopup(widget.controller.video),
         );
       },
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(15),
-          topRight: Radius.circular(15)
-        )
+          topRight: Radius.circular(15),
+        ),
       ),
-      backgroundColor: Colors.white
+      backgroundColor: Colors.white,
     );
 
     _commentSheetController.closed.then((_) {
@@ -374,39 +367,34 @@ class _VideoScreenState extends State<VideoScreen> {
                       video.setLiked(true);
                     });
                   },
-                  child: widget.controller.createPlayer()
-                )
+                  child: widget.controller.createPlayer(),
+                ),
               );
             } else {
-              return Center(
-                child: CircularProgressIndicator()
-              );
+              return Center(child: CircularProgressIndicator());
             }
-          }
+          },
         );
       },
       stack: <Widget>[
-        if (!widget.controller.isPlaying() && widget.controller.paused) Center(
-          child: GestureDetector(
-            child: Icon(
-              Icons.play_arrow,
-              color: Colors.white,
-              size: 100
+        if (!widget.controller.isPlaying() && widget.controller.paused)
+          Center(
+            child: GestureDetector(
+              child: Icon(Icons.play_arrow, color: Colors.white, size: 100),
+              onTap: () {
+                if (!canInteract()) return;
+                setState(() => widget.controller.toggle());
+              },
             ),
-            onTap: () {
-              if (!canInteract()) return;
-              setState(() => widget.controller.toggle());
-            }
           ),
-        ),
         Align(
           alignment: Alignment.bottomCenter,
           child: SizedBox(
             height: 2,
             child: LinearVideoProgressIndicator(
               controller: widget.controller,
-            )
-          )
+            ),
+          ),
         ),
         Positioned(
           bottom: 0,
@@ -417,7 +405,7 @@ class _VideoScreenState extends State<VideoScreen> {
               Container(
                 alignment: Alignment.bottomLeft,
                 padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                child: formatText(widget.controller.video.desc)
+                child: formatText(widget.controller.video.desc),
               ),
               Container(
                 padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
@@ -432,7 +420,7 @@ class _VideoScreenState extends State<VideoScreen> {
                             Icon(
                               Icons.music_note,
                               color: Colors.white,
-                              size: 40
+                              size: 40,
                             ),
                             Expanded(
                               child: AutoScrollingText(
@@ -440,34 +428,35 @@ class _VideoScreenState extends State<VideoScreen> {
                                 padding: 15,
                                 text: <String>[
                                   "original sound - @${video.sound.user.name}",
-                                  video.sound.desc
-                                ]
-                              )
-                            )
-                          ]
-                        )
-                      )
+                                  video.sound.desc,
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     LikeButton(
-                      video: video
+                      video: video,
                     ),
                     _makeVideoButton(
                       icon: FontAwesome.comment_lines_solid,
                       text: compactInt(video.comments),
-                      callback: showComments
+                      callback: showComments,
                     ),
                     _makeVideoButton(
                       icon: FontAwesome.share_solid,
                       text: compactInt(video.shares),
                       callback: () {
                         print("Shared a video");
-                      }
-                    )
-                  ]
-                )
-              )
-            ]
-          )),
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         Container(
           padding: EdgeInsets.all(10),
           child: Row(
@@ -482,14 +471,15 @@ class _VideoScreenState extends State<VideoScreen> {
                   children: <Widget>[
                     UserProfileIcon(
                       user: video.user,
-                      size: 40
+                      size: 40,
                     ),
                     Padding(
-                      padding: EdgeInsets.all(5)
+                      padding: EdgeInsets.all(5),
                     ),
-                    formatText("@${video.user.name} \n4983 Followers")
-                  ]
-                )
+                    formatText(
+                        "@${video.user.name} \n${video.user.followers} Follower${video.user.followers == 1 ? "" : "s"}"),
+                  ],
+                ),
               ),
               GestureDetector(
                 onTap: () {
@@ -499,13 +489,13 @@ class _VideoScreenState extends State<VideoScreen> {
                 child: Icon(
                   FontAwesome.ellipsis_h_regular,
                   size: 40,
-                  color: Colors.white
-                )
-              )
-            ]
-          )
-        )
-      ]
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -520,21 +510,20 @@ Widget makeEmptyVideo() {
   return Container(
     alignment: Alignment.center,
     color: Colors.black,
-    child: CircularProgressIndicator()
+    child: CircularProgressIndicator(),
   );
 }
 
 Widget fullscreenAspectRatio({
-                               BuildContext context,
-                               double aspectRatio,
-                               Widget Function(double width, double height) video,
-                               List<Widget> stack
-                             }) {
+  BuildContext context,
+  double aspectRatio,
+  Widget Function(double width, double height) video,
+  List<Widget> stack,
+}) {
   MediaQueryData query = MediaQuery.of(context);
 
   double width = query.size.width;
-  double height = query.size.height - query.padding.top - query.padding
-    .bottom;
+  double height = query.size.height - query.padding.top - query.padding.bottom;
 
   double videoWidth = width;
   double videoHeight = videoWidth / aspectRatio;
@@ -564,15 +553,15 @@ Widget fullscreenAspectRatio({
               child: FittedBox(
                 fit: BoxFit.fitWidth,
                 alignment: Alignment.center,
-                child: video(videoWidth, videoHeight)
-              )
-            )
-          )
+                child: video(videoWidth, videoHeight),
+              ),
+            ),
+          ),
         ),
         Stack(
-          children: stack
-        )
-      ]
-    )
+          children: stack,
+        ),
+      ],
+    ),
   );
 }

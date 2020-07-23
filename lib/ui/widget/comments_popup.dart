@@ -24,23 +24,20 @@ class CommentLikeButton extends StatefulWidget {
 class _CommentLikeButtonState extends State<CommentLikeButton> {
   @override
   Widget build(BuildContext context) {
-    var themeColor = Theme
-      .of(context)
-      .textTheme
-      .bodyText1
-      .color;
+    var themeColor = Theme.of(context).textTheme.bodyText1.color;
     return GestureDetector(
       onTap: () {
         setState(() {
           widget.comment.liked = !widget.comment.liked;
-          if (widget.comment.liked)
+          if (widget.comment.liked) {
             widget.comment.likes++;
-          else
+          } else {
             widget.comment.likes--;
+          }
         });
-        graphqlClient.value.mutate(
-          MutationOptions(
-            documentNode: gql("""
+        graphqlClient.value
+            .mutate(MutationOptions(
+          documentNode: gql("""
               mutation LikeComment(\$commentId: String!, \$remove: Boolean = false) {
                 likeComment(
                   commentId: \$commentId,
@@ -51,12 +48,12 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
                 }
               }
             """),
-            variables: {
-              "commentId": widget.comment.id,
-              "remove": !widget.comment.liked
-            }
-          )
-        ).then((result) {
+          variables: {
+            "commentId": widget.comment.id,
+            "remove": !widget.comment.liked,
+          },
+        ))
+            .then((result) {
           if (result.hasException) {
             return logger.w("Failed to (un)like comment: ${result.exception}");
           }
@@ -64,8 +61,8 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
           if (like["error"] != null) {
             return logger.w("Failed to (un)like comment: ${like["error"]}");
           }
-          logger.i("${widget.comment.liked ? "L" : "Unl"}iked comment #${widget
-            .comment.id} successfully!");
+          logger.i(
+              "${widget.comment.liked ? "L" : "Unl"}iked comment #${widget.comment.id} successfully!");
         });
       },
       child: Padding(
@@ -75,23 +72,24 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
             Icon(
               widget.comment.liked ? Icons.favorite : Icons.favorite_border,
               size: 25,
-              color: widget.comment.liked ? Colors.red : Colors.black
+              color: widget.comment.liked ? Colors.red : Colors.black,
             ),
             Text(
               compactInt(widget.comment.likes),
               style: TextStyle(
                 color: widget.comment.liked ? Colors.red : themeColor,
-              )
-            )
-          ]
-        )
-      )
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class SingleComment extends StatelessWidget {
   final Comment comment;
+
   SingleComment(this.comment);
 
   @override
@@ -102,7 +100,7 @@ class SingleComment extends StatelessWidget {
       child: DefaultTextStyle(
         style: TextStyle(
           color: themeColor,
-          fontSize: 15
+          fontSize: 15,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,8 +109,8 @@ class SingleComment extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(5, 5, 10, 5),
               child: UserProfileIcon(
                 user: this.comment.user,
-                size: 40
-              )
+                size: 40,
+              ),
             ),
             Expanded(
               flex: 2,
@@ -125,18 +123,18 @@ class SingleComment extends StatelessWidget {
                     child: Text(
                       this.comment.user.name,
                       style: TextStyle(
-                        fontWeight: FontWeight.bold
-                      )
-                    )
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  Text(this.comment.body)
-                ]
-              )
+                  Text(this.comment.body),
+                ],
+              ),
             ),
-            CommentLikeButton(this.comment)
-          ]
-        )
-      )
+            CommentLikeButton(this.comment),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -171,8 +169,8 @@ class _CommentListState extends State<CommentList> {
           }
         """),
         variables: {
-          "videoId": widget.video.id
-        }
+          "videoId": widget.video.id,
+        },
       ),
       builder: (result, {refetch, fetchMore}) {
         if (result.hasException) {
@@ -186,9 +184,9 @@ class _CommentListState extends State<CommentList> {
           itemBuilder: (context, index) {
             Comment comment = Comment.fromJson(comments[index]);
             return SingleComment(comment);
-          }
+          },
         );
-      }
+      },
     );
   }
 }
@@ -237,7 +235,8 @@ class _WriteCommentBoxState extends State<WriteCommentBox> {
               _focusNode.unfocus();
               _textController.text = "";
 
-              graphqlClient.value.mutate(MutationOptions(
+              graphqlClient.value
+                  .mutate(MutationOptions(
                 documentNode: gql("""
                   mutation AddComment(\$videoId: String!, \$body: String!) {
                     addComment(videoId: \$videoId, body: \$body) {
@@ -248,9 +247,10 @@ class _WriteCommentBoxState extends State<WriteCommentBox> {
                 """),
                 variables: {
                   "videoId": widget.video.id,
-                  "body": body
-                }
-              )).then((result) {
+                  "body": body,
+                },
+              ))
+                  .then((result) {
                 if (result.hasException) {
                   logger.w("Failed to post comment: ${result.exception}");
                   return;
@@ -267,15 +267,16 @@ class _WriteCommentBoxState extends State<WriteCommentBox> {
             },
             child: Icon(
               Icons.send,
-              color: _textController.value.text.length > 0 ? Colors.red : Colors
-                .grey
-            )
+              color: _textController.value.text.length > 0
+                  ? Colors.red
+                  : Colors.grey,
+            ),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(5)
-          )
+            borderRadius: BorderRadius.circular(5),
+          ),
         ),
-      )
+      ),
     );
   }
 
@@ -288,6 +289,7 @@ class _WriteCommentBoxState extends State<WriteCommentBox> {
 
 class CommentsPopup extends StatefulWidget {
   final Video video;
+
   CommentsPopup(this.video);
 
   @override
@@ -295,7 +297,6 @@ class CommentsPopup extends StatefulWidget {
 }
 
 class _CommentsPopupState extends State<CommentsPopup> {
-
   @override
   Widget build(BuildContext context) {
     var commentCount = widget.video.comments;
@@ -325,35 +326,31 @@ class _CommentsPopupState extends State<CommentsPopup> {
                     child: Text(
                       commentsStr,
                       style: TextStyle(
-                        fontSize: 15
-                      )
-                    )
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                   Container(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
                       onTap: () {
                         new CommentsPopupNotification(visible: false)
-                          .dispatch(context);
+                            .dispatch(context);
                       },
                       child: Icon(
                         Icons.close,
-                        size: 25
-                      )
-                    )
-                  )
-                ]
-              )
+                        size: 25,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Expanded(
-              child: CommentList(widget.video)
-            ),
-            Container(
-              child: WriteCommentBox(widget.video)
-            )
-          ]
-        )
-      )
+            Expanded(child: CommentList(widget.video)),
+            Container(child: WriteCommentBox(widget.video)),
+          ],
+        ),
+      ),
     );
   }
 }

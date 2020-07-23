@@ -6,9 +6,14 @@ class User {
   bool followsYou, followedByYou;
 
   User({
-    this.name, this.displayName, this.profilePicURL,
-    this.following, this.followers, this.likes,
-    this.followsYou, this.followedByYou
+    this.name,
+    this.displayName,
+    this.profilePicURL,
+    this.following,
+    this.followers,
+    this.likes,
+    this.followsYou,
+    this.followedByYou,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -16,11 +21,11 @@ class User {
       name: json["name"],
       displayName: json["displayName"],
       profilePicURL: json["profilePicURL"],
-      following: json["following"],
-      followers: json["followers"],
-      likes: json["likes"],
+      following: getOptionalInt(json, "following"),
+      followers: getOptionalInt(json, "followers"),
+      likes: getOptionalInt(json, "likes"),
       followsYou: getOptionalBool(json, "followsYou"),
-      followedByYou: getOptionalBool(json, "followedByYou")
+      followedByYou: getOptionalBool(json, "followedByYou"),
     );
   }
 }

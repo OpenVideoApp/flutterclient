@@ -31,36 +31,38 @@ class _MainScreenState extends State<MainScreen> {
   Widget _navBar() {
     ThemeData theme = _selectedTab == 0 ? darkTheme : lightTheme;
     return Container(
-      decoration: _selectedTab == 0 ? null : BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            width: 1,
-            color: theme.accentColor
-          )
-        )
-      ),
+      decoration: _selectedTab == 0
+          ? null
+          : BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  width: 1,
+                  color: theme.accentColor,
+                ),
+              ),
+            ),
       child: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            title: Text("Home")
+            title: Text("Home"),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            title: Text("Search")
+            title: Text("Search"),
           ),
           BottomNavigationBarItem(
             icon: Icon(FontAwesome.video_plus_solid),
-            title: Text("Create")
+            title: Text("Create"),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.message),
-            title: Text("Chat")
+            title: Text("Chat"),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            title: Text("Profile")
-          )
+            title: Text("Profile"),
+          ),
         ],
         backgroundColor: theme.backgroundColor,
         type: BottomNavigationBarType.fixed,
@@ -73,12 +75,12 @@ class _MainScreenState extends State<MainScreen> {
             _changeNotifier.sink.add(NavInfo(
               type: NavInfoType.Tab,
               from: _selectedTab,
-              to: index
+              to: index,
             ));
             _selectedTab = index;
           });
         },
-      )
+      ),
     );
   }
 
@@ -89,14 +91,16 @@ class _MainScreenState extends State<MainScreen> {
     return NotificationListener(
       onNotification: (notification) {
         if (notification is ProfileScreenNotification) {
-          logger.i("Profile screen ${notification.opened ? "opened" : "closed"}");
+          logger
+              .i("Profile screen ${notification.opened ? "opened" : "closed"}");
           _changeNotifier.sink.add(NavInfo(
             type: NavInfoType.Profile,
             from: notification.opened ? _selectedTab : -1,
-            to: notification.opened ? -1 : _selectedTab
+            to: notification.opened ? -1 : _selectedTab,
           ));
           return true;
-        } else return false;
+        } else
+          return false;
       },
       child: Scaffold(
         body: Scaffold(
@@ -105,23 +109,23 @@ class _MainScreenState extends State<MainScreen> {
             child: IndexedStack(
               children: <Widget>[
                 HomeTab(
-                  shouldTriggerChange: _changeNotifier.stream
+                  shouldTriggerChange: _changeNotifier.stream,
                 ),
                 Container(),
                 _selectedTab == 2 ? CreateTab() : Container(),
                 Container(
                   color: Colors.red,
                   alignment: Alignment.center,
-                  child: Text("Chat")
+                  child: Text("Chat"),
                 ),
-                ProfileTab(AuthInfo.instance().username)
+                ProfileTab(AuthInfo.instance().username),
               ],
-              index: _selectedTab
-            )
+              index: _selectedTab,
+            ),
           ),
-          bottomNavigationBar: _navBar()
-        )
-      )
+          bottomNavigationBar: _navBar(),
+        ),
+      ),
     );
   }
 

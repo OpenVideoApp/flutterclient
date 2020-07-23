@@ -6,7 +6,8 @@ class CustomAppBar extends StatelessWidget {
 
   CustomAppBar({
     @required this.title,
-    this.left, this.right
+    this.left,
+    this.right,
   });
 
   @override
@@ -17,17 +18,17 @@ class CustomAppBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          this.left == null ? Container () : this.left,
+          this.left == null ? Container() : this.left,
           Text(
             this.title,
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.w500
-            )
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          this.right == null ? Container() : this.right
-        ]
-      )
+          this.right == null ? Container() : this.right,
+        ],
+      ),
     );
   }
 }

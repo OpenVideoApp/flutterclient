@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutterclient/ui/widget/video_screen.dart';
 
-enum NavInfoType {
-  Tab,
-  Video,
-  Profile
-}
+enum NavInfoType { Tab, Video, Profile }
 
 class NavInfo {
   NavInfoType type;
@@ -28,13 +24,11 @@ Widget formatText(String text) {
       formattedWords.add(
         TextSpan(
           text: word,
-          style: TextStyle(fontWeight: FontWeight.bold)
-        )
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       );
     } else {
-      formattedWords.add(
-        TextSpan(text: word)
-      );
+      formattedWords.add(TextSpan(text: word));
     }
     if (i < words.length) formattedWords.add(TextSpan(text: " "));
   }
@@ -44,10 +38,10 @@ Widget formatText(String text) {
       text: "",
       style: TextStyle(
         color: Colors.white,
-        fontSize: 15
+        fontSize: 15,
       ),
-      children: formattedWords
-    )
+      children: formattedWords,
+    ),
   );
 }
 
@@ -73,12 +67,12 @@ class LinearVideoProgressIndicator extends StatefulWidget {
 
   @override
   _LinearVideoProgressIndicatorState createState() =>
-    _LinearVideoProgressIndicatorState();
+      _LinearVideoProgressIndicatorState();
 }
 
 class _LinearVideoProgressIndicatorState
-  extends State<LinearVideoProgressIndicator>
-  with SingleTickerProviderStateMixin {
+    extends State<LinearVideoProgressIndicator>
+    with SingleTickerProviderStateMixin {
   Ticker _ticker;
   double _progress = 0;
 
@@ -104,7 +98,7 @@ class _LinearVideoProgressIndicatorState
     return LinearProgressIndicator(
       value: _progress,
       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-      backgroundColor: Colors.transparent
+      backgroundColor: Colors.transparent,
     );
   }
 
@@ -127,7 +121,7 @@ class AutoScrollingText extends StatefulWidget {
 }
 
 class _AutoScrollingTextState extends State<AutoScrollingText>
-  with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   GlobalKey _key = GlobalKey();
   ScrollController _scrollController;
   Ticker _ticker;
@@ -163,11 +157,11 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
 
     var col = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines
+      children: lines,
     );
 
     var padding = Padding(
-      padding: EdgeInsets.only(left: widget.padding)
+      padding: EdgeInsets.only(left: widget.padding),
     );
 
     return SingleChildScrollView(
@@ -176,10 +170,8 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
       physics: NeverScrollableScrollPhysics(),
       child: Row(
         key: _key,
-        children: <Widget>[
-          col, padding, col, padding, col, padding
-        ]
-      )
+        children: <Widget>[col, padding, col, padding, col, padding],
+      ),
     );
   }
 
@@ -205,9 +197,10 @@ class BorderedFlatButton extends StatelessWidget {
     this.textColor = Colors.black,
     this.backgroundColor = Colors.white,
     this.borderColor = Colors.black,
-    this.width, this.height,
+    this.width,
+    this.height,
     this.padding = EdgeInsets.zero,
-    this.margin = EdgeInsets.zero
+    this.margin = EdgeInsets.zero,
   });
 
   @override
@@ -222,28 +215,27 @@ class BorderedFlatButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: this.backgroundColor,
-          border: Border.all(color: this.borderColor)
+          border: Border.all(color: this.borderColor),
         ),
-        child: text
-      )
+        child: text,
+      ),
     );
   }
 }
 
-PageRouteBuilder zoomTo(Widget Function(BuildContext, Animation<double>, Animation<double>) pageBuilder) {
+PageRouteBuilder zoomTo(
+    Widget Function(BuildContext, Animation<double>, Animation<double>)
+        pageBuilder) {
   return PageRouteBuilder(
     pageBuilder: pageBuilder,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      var tween = Tween(
-        begin: 0.0,
-        end: 1.0
-      );
+      var tween = Tween(begin: 0.0, end: 1.0);
       var anim = animation.drive(tween);
       return ScaleTransition(
         scale: anim,
-        child: child
+        child: child,
       );
     },
-    transitionDuration: Duration(milliseconds: 100)
+    transitionDuration: Duration(milliseconds: 100),
   );
 }

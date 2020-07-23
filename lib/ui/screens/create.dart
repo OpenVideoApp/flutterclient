@@ -32,10 +32,8 @@ class _CreateTabState extends State<CreateTab> {
   Widget build(BuildContext context) {
     if (_cameraController == null || !_cameraController.value.isInitialized) {
       return Container(
-        alignment: Alignment.center,
-        child: Text("Camera Error")
-      );
-    } else
+          alignment: Alignment.center, child: Text("Camera Error"));
+    } else {
       return fullscreenAspectRatio(
         context: context,
         aspectRatio: _cameraController.value.aspectRatio,
@@ -43,13 +41,14 @@ class _CreateTabState extends State<CreateTab> {
           return Container(
             width: width,
             height: height,
-            child: CameraPreview(_cameraController)
+            child: CameraPreview(_cameraController),
           );
         },
         stack: <Widget>[
-          Text("Hello :)")
-        ]
+          Text("Hello :)"),
+        ],
       );
+    }
   }
 
   @override

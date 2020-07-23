@@ -1,8 +1,6 @@
 import 'package:logger/logger.dart';
 
-final logger = Logger(
-  printer: SimpleLogPrinter()
-);
+final logger = Logger(printer: SimpleLogPrinter());
 
 class SimpleLogPrinter extends LogPrinter {
   @override

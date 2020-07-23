@@ -8,8 +8,8 @@ class BaseTheme {
   BaseTheme({@required this.isDark, this.bg1, this.accent1});
 
   ThemeData get themeData {
-    TextTheme txtTheme = (isDark ? ThemeData.dark() : ThemeData.light())
-      .textTheme;
+    TextTheme txtTheme =
+        (isDark ? ThemeData.dark() : ThemeData.light()).textTheme;
     Color txtColor = txtTheme.bodyText1.color;
     ColorScheme colorScheme = ColorScheme(
       brightness: isDark ? Brightness.dark : Brightness.light,
@@ -24,31 +24,24 @@ class BaseTheme {
       onError: Colors.white,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      error: Colors.red.shade400
+      error: Colors.red.shade400,
     );
 
-    var t = ThemeData.from(
-      textTheme: txtTheme,
-      colorScheme: colorScheme
-    ).copyWith(
+    var t =
+        ThemeData.from(textTheme: txtTheme, colorScheme: colorScheme).copyWith(
       buttonColor: accent1,
       cursorColor: accent1,
       highlightColor: accent1,
-      toggleableActiveColor: accent1
+      toggleableActiveColor: accent1,
     );
 
     return t;
   }
 }
 
-final lightTheme = BaseTheme(
-  isDark: false,
-  bg1: Colors.white,
-  accent1: Colors.grey[600]
-).themeData;
+final lightTheme =
+    BaseTheme(isDark: false, bg1: Colors.white, accent1: Colors.grey[600])
+        .themeData;
 
-final darkTheme = BaseTheme(
-  isDark: true,
-  bg1: Colors.black,
-  accent1: Colors.grey
-).themeData;
+final darkTheme =
+    BaseTheme(isDark: true, bg1: Colors.black, accent1: Colors.grey).themeData;

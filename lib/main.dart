@@ -21,8 +21,8 @@ class OpenVideoApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: lightTheme,
         themeMode: ThemeMode.light,
-        home: OpenVideoScreen()
-      )
+        home: OpenVideoScreen(),
+      ),
     );
   }
 }
@@ -46,9 +46,9 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
           var token = prefs.getString("token");
           AuthInfo.instance().set(username, token);
 
-          graphqlClient.value.query(
-            QueryOptions(
-              documentNode: gql("""
+          graphqlClient.value
+              .query(
+            QueryOptions(documentNode: gql("""
                 query ValidateLogin() {
                   me {
                     ... on User {
@@ -56,10 +56,9 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
                     } ... on APIError {error}
                   }
                 }
-              """),
-              fetchPolicy: FetchPolicy.networkOnly
-            )
-          ).then((result) {
+              """), fetchPolicy: FetchPolicy.networkOnly),
+          )
+              .then((result) {
             if (result.hasException) {
               setState(() {
                 loading = false;
@@ -99,20 +98,18 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return Container(
-      color: Colors.white,
-      alignment: Alignment.center,
-      child: Text(
-        "OpenVideo",
-        style: Theme
-          .of(context)
-          .textTheme
-          .headline3
-      )
-    );
-    if (loggedIn)
+    if (loading)
+      return Container(
+        color: Colors.white,
+        alignment: Alignment.center,
+        child: Text(
+          "OpenVideo",
+          style: Theme.of(context).textTheme.headline3,
+        ),
+      );
+    if (loggedIn) {
       return MainScreen();
-    else
+    } else {
       return NotificationListener(
         child: LoginScreen(),
         onNotification: (notification) {
@@ -123,7 +120,8 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
             return true;
           }
           return false;
-        }
+        },
       );
+    }
   }
 }

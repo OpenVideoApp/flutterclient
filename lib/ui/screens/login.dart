@@ -39,9 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void signup() async {
     logger.i("Creating Account...");
-    QueryResult result = await graphqlClient.value.mutate(
-      MutationOptions(
-        documentNode: gql("""
+    QueryResult result = await graphqlClient.value.mutate(MutationOptions(
+      documentNode: gql("""
           mutation CreateUser(\$name: String!, \$password: String!, \$displayName: String!) {
             createUser(
               name: \$name, 
@@ -55,18 +54,18 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           }
         """),
-        fetchPolicy: FetchPolicy.networkOnly,
-        variables: {
-          "name": _usernameController.text,
-          "password": _passwordController.text,
-          "displayName": ""
-        }
-      )
-    );
+      fetchPolicy: FetchPolicy.networkOnly,
+      variables: {
+        "name": _usernameController.text,
+        "password": _passwordController.text,
+        "displayName": "",
+      },
+    ));
 
     if (result.hasException) {
-      throw Exception("Failed to create account: ${result.exception
-        .toString()}");
+      throw Exception(
+        "Failed to create account: ${result.exception.toString()}",
+      );
     }
 
     var user = result.data["createUser"];
@@ -86,8 +85,9 @@ class _LoginScreenState extends State<LoginScreen> {
       var iosInfo = await deviceInfo.iosInfo;
       // TODO: correctly label ios devices
       return iosInfo.localizedModel;
-    } else
+    } else {
       return "Desktop";
+    }
   }
 
   void signin() async {
@@ -96,9 +96,8 @@ class _LoginScreenState extends State<LoginScreen> {
     var device = await getDeviceName();
     var username = _usernameController.text;
 
-    QueryResult result = await graphqlClient.value.mutate(
-      MutationOptions(
-        documentNode: gql("""
+    QueryResult result = await graphqlClient.value.mutate(MutationOptions(
+      documentNode: gql("""
           mutation Login(
             \$username: String!,
             \$password: String!,
@@ -110,14 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           }
         """),
-        fetchPolicy: FetchPolicy.networkOnly,
-        variables: {
-          "username": username,
-          "password": _passwordController.text,
-          "device": device
-        }
-      )
-    );
+      fetchPolicy: FetchPolicy.networkOnly,
+      variables: {
+        "username": username,
+        "password": _passwordController.text,
+        "device": device
+      },
+    ));
 
     _passwordController.clear();
 
@@ -162,22 +160,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: EdgeInsets.all(15),
                   child: Text(
                     "OpenVideo",
-                    style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline4
-                  )
+                    style: Theme.of(context).textTheme.headline4,
+                  ),
                 ),
-                if (this.error != null) Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Text(
-                    this.error,
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 15
-                    )
-                  )
-                ),
+                if (this.error != null)
+                  Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Text(
+                      this.error,
+                      style: TextStyle(color: Colors.red, fontSize: 15),
+                    ),
+                  ),
                 Padding(
                   padding: EdgeInsets.all(10),
                   child: TextField(
@@ -186,10 +179,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       hintText: "Username",
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15)
-                      )
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                     ),
-                  )
+                  ),
                 ),
                 Padding(
                   padding: EdgeInsets.all(10),
@@ -199,23 +192,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusNode: _passwordFocus,
                     decoration: InputDecoration(
                       hintText: "Password",
-                      suffixIcon: !_passwordSelected ? null : GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
-                        child: Icon(
-                          _passwordVisible ? FontAwesome
-                            .eye_slash_solid : FontAwesome.eye_solid,
-                          size: 20
-                        )
-                      ),
+                      suffixIcon: !_passwordSelected
+                          ? null
+                          : GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                              child: Icon(
+                                _passwordVisible
+                                    ? FontAwesome.eye_slash_solid
+                                    : FontAwesome.eye_solid,
+                                size: 20,
+                              ),
+                            ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15)
-                      )
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                     ),
-                  )
+                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -225,24 +221,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: RaisedButton(
                         padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
                         onPressed: () => signin(),
-                        child: Text("Login")
-                      )
+                        child: Text("Login"),
+                      ),
                     ),
                     Padding(
                       padding: EdgeInsets.all(15),
                       child: RaisedButton(
                         padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
                         onPressed: () => signup(),
-                        child: Text("Create Account")
-                      )
-                    )
-                  ]
-                )
-              ]
-            )
-          )
-        )
-      )
+                        child: Text("Create Account"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/api/user.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
@@ -9,20 +10,22 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 
 class ProfilePage extends StatelessWidget {
   final String username;
+
   ProfilePage(this.username);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ProfileTab(this.username)
-      )
+        child: ProfileTab(this.username),
+      ),
     );
   }
 }
 
 class ProfileTab extends StatefulWidget {
   final String username;
+
   ProfileTab(this.username);
 
   @override
@@ -54,15 +57,17 @@ class _ProfileTabState extends State<ProfileTab> {
                   following
                   followers
                   likes
+                  followedByYou
                 } ... on APIError {error}
               }
             }
           """),
           variables: {
-            "username": widget.username
-          }
+            "username": widget.username,
+          },
         ),
-        builder: (QueryResult result, {VoidCallback refetch, FetchMore fetchMore}) {
+        builder: (QueryResult result,
+            {VoidCallback refetch, FetchMore fetchMore}) {
           if (result.hasException) {
             return Text(result.exception.toString());
           } else if (result.loading) {
@@ -79,95 +84,153 @@ class _ProfileTabState extends State<ProfileTab> {
           var divider = Divider(
             height: 0.5,
             thickness: 0.5,
-            color: outlineColor
+            color: outlineColor,
           );
+
+          var personalProfile = user.name == AuthInfo.instance().username;
 
           return NotificationListener(
             onNotification: (notification) {
               if (notification is ProfileUpdatedNotification) {
                 refetch();
                 return true;
-              } else return false;
+              } else
+                return false;
             },
             child: Column(
               children: <Widget>[
                 CustomAppBar(
-                  title: user.displayName,
-                  left: GestureDetector(
-                    onTap: () {
-                      print("add friends");
-                    },
-                    child: Icon(
-                      Icons.group_add,
-                      size: 25,
-                      color: theme.textTheme.headline5.color
-                    )
-                  ),
-                  right: GestureDetector(
-                    onTap: () {
-                      print("special profile button");
-                    },
-                    child: Icon(
-                      FontAwesome.ellipsis_h_regular,
-                      size: 25,
-                      color: theme.textTheme.headline5.color
-                    )
-                  )
-                ),
-                divider,
-                UserOverview(
-                  user: user
-                ),
-                Container(
-                  padding: EdgeInsets.only(top: 10, bottom: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      BorderedFlatButton(
-                        backgroundColor: Colors.white,
-                        textColor: Colors.black,
-                        borderColor: outlineColor,
-                        width: 150, height: 50,
-                        margin: EdgeInsets.all(5),
-                        onTap: () {
-                          logger.i("Edit Profile");
-                        },
-                        text: Text(
-                          "Edit Profile",
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w500
-                          )
-                        )
+                    title: user.displayName,
+                    left: GestureDetector(
+                      onTap: () {
+                        print("add friends");
+                      },
+                      child: Icon(
+                        Icons.group_add,
+                        size: 25,
+                        color: theme.textTheme.headline5.color,
                       ),
-                      BorderedFlatButton(
-                        backgroundColor: Colors.white,
-                        textColor: Colors.black,
-                        borderColor: outlineColor,
-                        width: 50, height: 50,
-                        margin: EdgeInsets.all(5),
-                        onTap: () {
-                          logger.i("Favorites");
-                        },
-                        text: Icon(
-                          Icons.star_border,
-                          size: 21
-                        )
-                      )
-                    ]
-                  )
-                ),
-                divider
-              ]
-            )
+                    ),
+                    right: GestureDetector(
+                      onTap: () {
+                        print("special profile button");
+                      },
+                      child: Icon(
+                        FontAwesome.ellipsis_h_regular,
+                        size: 25,
+                        color: theme.textTheme.headline5.color,
+                      ),
+                    )),
+                divider,
+                UserOverview(user: user),
+                personalProfile
+                    ? _PersonalProfileButtons()
+                    : _ProfileButtons(user),
+                divider,
+              ],
+            ),
           );
-        }
-      )
+        },
+      ),
     );
   }
 
   @override
   void dispose() {
     super.dispose();
+  }
+}
+
+class _PersonalProfileButtons extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var outlineColor = Color.fromRGBO(0, 0, 0, 0.5);
+    return Container(
+      padding: EdgeInsets.only(top: 10, bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          BorderedFlatButton(
+            backgroundColor: Colors.white,
+            textColor: Colors.black,
+            borderColor: outlineColor,
+            width: 150,
+            height: 50,
+            margin: EdgeInsets.all(5),
+            onTap: () {
+              logger.i("Edit Profile");
+            },
+            text: Text(
+              "Edit Profile",
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          _ProfileButton(
+            icon: Icons.star_border,
+            onPressed: () {
+              logger.i("Profile Star Button");
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileButtons extends StatelessWidget {
+  final User user;
+
+  _ProfileButtons(this.user);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(top: 10, bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          FollowButton(
+            this.user,
+            width: 150,
+            height: 50,
+            fontSize: 17,
+          ),
+          _ProfileButton(
+            icon: Icons.keyboard_arrow_down,
+            onPressed: () {
+              logger.i("Profile Down Button");
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  _ProfileButton({@required this.icon, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    var outlineColor = Color.fromRGBO(0, 0, 0, 0.5);
+    return BorderedFlatButton(
+      backgroundColor: Colors.white,
+      textColor: Colors.black,
+      borderColor: outlineColor,
+      width: 50,
+      height: 50,
+      margin: EdgeInsets.all(5),
+      onTap: onPressed,
+      text: Icon(
+        icon,
+        size: 21,
+      ),
+    );
   }
 }
