@@ -1,17 +1,70 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutterclient/api/auth.dart';
+import 'package:flutterclient/api/upload.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/ui/widget/video_screen.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart';
 
 List<CameraDescription> cameras;
 
 Future<void> initCameras() async {
   cameras = await availableCameras();
+}
+
+class _UploadDetailsScreen extends StatefulWidget {
+  final UploadableVideo builder;
+
+  _UploadDetailsScreen(this.builder);
+
+  @override
+  _UploadDetailsScreenState createState() => _UploadDetailsScreenState();
+}
+
+class _UploadDetailsScreenState extends State<_UploadDetailsScreen> {
+  TextEditingController _descController;
+
+  @override
+  void initState() {
+    super.initState();
+    _descController = TextEditingController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Container(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.fromLTRB(10, 5, 10, 5),
+                child: TextField(
+                  controller: _descController,
+                  decoration: InputDecoration(
+                    hintText: "Video Description..",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(0),
+                    ),
+                  ),
+                )
+              ),
+              BorderedFlatButton(
+                onTap: () {
+                  logger.i("Upload video save btn");
+                },
+                text: Text("Upload"),
+                width: 150,
+                height: 50,
+                margin: EdgeInsets.all(5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class CreateTab extends StatefulWidget {
@@ -20,6 +73,8 @@ class CreateTab extends StatefulWidget {
 }
 
 class _CreateTabState extends State<CreateTab> {
+  bool loading = false;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -27,83 +82,45 @@ class _CreateTabState extends State<CreateTab> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          BorderedFlatButton(
-            onTap: () async {
-              var file = await ImagePicker().getVideo(
-                source: ImageSource.camera,
-                preferredCameraDevice: CameraDevice.front,
-                maxDuration: Duration(seconds: 60),
-              );
-
-              if (file == null) return;
-
-              var query = await graphqlClient.value.mutate(MutationOptions(
-                documentNode: gql("""
-                  mutation RequestVideoUpload {
-                    request: requestVideoUpload {
-                      ... on UploadableVideo {id uploadURL}
-                      ... on APIError {error}
-                    }
-                  }
-                """),
-              ));
-
-              if (query.hasException) {
-                return logger.w("Failed to get upload URL: ${query.exception}");
-              }
-
-              var request = query.data["request"];
-              if (request["error"] != null) {
-                return logger.w(
-                  "Failed to get upload URL: ${request["error"]}",
+          if (!loading)
+            BorderedFlatButton(
+              onTap: () async {
+                var file = await ImagePicker().getVideo(
+                  source: ImageSource.camera,
+                  preferredCameraDevice: CameraDevice.front,
+                  maxDuration: Duration(seconds: 60),
                 );
-              }
 
-              var res = await put(
-                request["uploadURL"],
-                body: await file.readAsBytes(),
-                headers: {"Content-Type": "video/mp4"},
-              );
+                if (file == null) return;
 
-              if (res.statusCode != 200) {
-                return logger.w(
-                  "Failed to upload video (${res.statusCode}): ${res.body}",
+                var builder = await requestUpload();
+                if (builder == null) return;
+
+                Navigator.of(context).push(
+                  zoomTo((context, animation, secondaryAnimation) {
+                    return _UploadDetailsScreen(builder);
+                  }),
                 );
-              }
 
-              query = await graphqlClient.value.mutate(MutationOptions(
-                documentNode: gql("""
-                  mutation VideoUploadFinished(\$id: String!) {
-                    result: handleCompletedVideoUpload(videoId: \$id) {
-                      ... on APIResult {success}
-                      ... on APIError {error}
-                    }
-                  }
-                """),
-                variables: {
-                  "id": request["id"],
-                },
-              ));
-
-              if (query.hasException) {
-                return logger.w(
-                    "Failed to get complete video upload: ${query.exception}");
-              }
-
-              var result = query.data["result"];
-              if (result["error"] != null) return logger.w("Failed to handle completed upload: ${result["error"]}");
-
-              logger.i("Video upload handled: ${result["success"]}");
-            },
-            text: Text(
-              "Record Video",
-              style: TextStyle(
-                fontSize: 18,
+                uploadVideo(builder, file).then((success) {
+                  logger.i("Uploaded video: $success");
+                }).catchError((error) {
+                  logger.w("Upload failed: $error}");
+                });
+              },
+              text: Text(
+                "Record Video",
+                style: TextStyle(
+                  fontSize: 18,
+                ),
               ),
+              width: 150,
+              height: 50,
             ),
-            width: 150,
-            height: 50,
-          ),
+          if (loading)
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+            ),
         ],
       ),
     );
