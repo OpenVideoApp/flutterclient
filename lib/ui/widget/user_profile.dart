@@ -69,6 +69,7 @@ class _FollowButtonState extends State<FollowButton> {
         style: TextStyle(
           fontWeight: FontWeight.w400,
           fontSize: widget.fontSize,
+          color: following ? Colors.black : Colors.white,
         ),
       ),
       backgroundColor: following ? Colors.white : Colors.pinkAccent,
