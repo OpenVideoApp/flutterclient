@@ -4,8 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final _googleSignIn = GoogleSignIn(
+  clientId: "com.googleusercontent.apps.859725405396-fn77ecqnl8bqn1p24ptktokqpv0us32o",
+  scopes: [
+    "email",
+  ],
+);
 
 class LoggedInNotification extends Notification {}
 
@@ -83,8 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return "${androidInfo.manufacturer} ${androidInfo.product}";
     } else if (Platform.isIOS) {
       var iosInfo = await deviceInfo.iosInfo;
-      // TODO: correctly label ios devices
-      return iosInfo.localizedModel;
+      return iosInfo.name;
     } else {
       return "Desktop";
     }
@@ -113,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
       variables: {
         "username": username,
         "password": _passwordController.text,
-        "device": device
+        "device": device,
       },
     ));
 
@@ -144,6 +151,45 @@ class _LoginScreenState extends State<LoginScreen> {
 
     AuthInfo.instance().set(username, token);
     new LoggedInNotification().dispatch(context);
+  }
+
+  void googleSignIn() async {
+    logger.i("Signing in with Google...");
+
+    try {
+      var acc = await _googleSignIn.signIn();
+      var auth = await acc.authentication;
+
+      QueryResult result = await graphqlClient.value.mutate(MutationOptions(
+        documentNode: gql("""
+          mutation LoginWithGoogle(\$idToken: String!) {
+            loginWithGoogle(idToken: \$idToken) {
+              ... on APIResult {success}
+              ... on APIError {error}
+            }
+          }
+        """),
+        fetchPolicy: FetchPolicy.networkOnly,
+        variables: {"idToken": auth.idToken},
+      ));
+
+      if (result.hasException) {
+        logger.e("Failed to sign in with google: ${result.exception}");
+        return setState(() {
+          this.error = "Google Sign-In Failed";
+        });
+      }
+
+      var signin = result.data["loginWithGoogle"];
+
+      if (signin["error"] != null) {
+        return setState(() {
+          this.error = signin["error"];
+        });
+      }
+    } catch (error) {
+      logger.w("Google sign in failed: $error");
+    }
   }
 
   @override
@@ -201,9 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 });
                               },
                               child: Icon(
-                                _passwordVisible
-                                    ? FontAwesome.eye_slash_solid
-                                    : FontAwesome.eye_solid,
+                                _passwordVisible ? FontAwesome.eye_slash_solid : FontAwesome.eye_solid,
                                 size: 20,
                               ),
                             ),
@@ -234,6 +278,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+                Padding(
+                  padding: EdgeInsets.all(15),
+                  child: RaisedButton(
+                    padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
+                    onPressed: () => googleSignIn(),
+                    child: Text("Sign In with Google"),
+                  ),
+                )
               ],
             ),
           ),

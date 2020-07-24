@@ -47,5 +47,16 @@
     <string>Mic access is required to record sound.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Photo access is required to upload videos.</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+    	<dict>
+    		<key>CFBundleTypeRole</key>
+    		<string>Editor</string>
+    		<key>CFBundleURLSchemes</key>
+    		<array>
+    			<string>com.googleusercontent.apps.859725405396-fn77ecqnl8bqn1p24ptktokqpv0us32o</string>
+    		</array>
+    	</dict>
+    </array>
 </dict>
 </plist>
