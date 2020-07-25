@@ -29,4 +29,10 @@ flutter:
   fonts:
     - family:  FontAwesome
       fonts:
-        - asset: fonts/FontAwesome.ttf
+        - asset: assets/fonts/FontAwesome.ttf
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+  assets:
+    - assets/images/

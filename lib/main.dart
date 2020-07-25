@@ -51,9 +51,8 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
             QueryOptions(documentNode: gql("""
                 query ValidateLogin() {
                   me {
-                    ... on User {
-                      displayName
-                    } ... on APIError {error}
+                    ... on User {name}
+                    ... on APIError {error}
                   }
                 }
               """), fetchPolicy: FetchPolicy.networkOnly),
@@ -76,7 +75,7 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
                 loading = false;
               });
             } else {
-              logger.i("Logged in as ${user["displayName"]}");
+              logger.i("Logged in as ${user["name"]}");
               setState(() {
                 loading = false;
                 loggedIn = true;
@@ -98,30 +97,19 @@ class _OpenVideoScreen extends State<OpenVideoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return Container(
         color: Colors.white,
         alignment: Alignment.center,
         child: Text(
           "OpenVideo",
-          style: Theme.of(context).textTheme.headline3,
+          style: Theme
+              .of(context)
+              .textTheme
+              .headline3,
         ),
       );
-    if (loggedIn) {
-      return MainScreen();
-    } else {
-      return NotificationListener(
-        child: LoginScreen(),
-        onNotification: (notification) {
-          if (notification is LoggedInNotification) {
-            setState(() {
-              loggedIn = true;
-            });
-            return true;
-          }
-          return false;
-        },
-      );
     }
+    return loggedIn ? MainScreen() : InitialLoginScreen();
   }
 }
