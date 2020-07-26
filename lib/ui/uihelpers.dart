@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutterclient/ui/widget/video_screen.dart';
 
-enum NavInfoType { Tab, Video, Profile }
+enum NavInfoType { Tab, Video, Overlay }
 
 class NavInfo {
   NavInfoType type;
@@ -238,4 +238,68 @@ PageRouteBuilder zoomTo(
     },
     transitionDuration: Duration(milliseconds: 100),
   );
+}
+
+Widget Function(BuildContext, Animation<double>, Animation<double>, Widget) slideFrom(double x, double y) {
+  return (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+    var begin = Offset(x, y);
+    var end = Offset.zero;
+
+    var tween = Tween(begin: begin, end: end);
+    var offsetAnimation = animation.drive(tween);
+
+    return SlideTransition(
+      position: offsetAnimation,
+      child: child,
+    );
+  };
+}
+
+
+class GradientButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final List<Color> colors;
+
+  GradientButton({@required this.onPressed, this.child, this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return RaisedButton(
+      padding: EdgeInsets.zero,
+      onPressed: this.onPressed,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.transparent),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Ink(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          gradient: this.colors == null
+              ? null
+              : LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            stops: [0, 1],
+            colors: this.colors,
+          ),
+          color: this.colors != null ? null : Colors.white,
+        ),
+        child: Container(
+          alignment: Alignment.center,
+          child: DefaultTextStyle(
+            style: TextStyle(
+              fontFamily: "Roboto",
+              fontWeight: FontWeight.w500,
+              fontSize: 18.0,
+              color: this.colors == null ? Colors.black.withOpacity(0.5) : Colors.white,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 }

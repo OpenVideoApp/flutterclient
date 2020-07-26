@@ -1,7 +1,8 @@
+import 'dart:io';
+
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart';
 
 class UploadableVideo {
@@ -9,16 +10,20 @@ class UploadableVideo {
   UploadableVideo({this.id, this.url});
 }
 
-Future<UploadableVideo> requestUpload() async {
+Future<UploadableVideo> requestUpload(String desc, String soundDesc) async {
   var query = await graphqlClient.value.mutate(MutationOptions(
     documentNode: gql("""
-      mutation RequestVideoUpload {
-        request: requestVideoUpload {
+      mutation RequestVideoUpload(\$desc: String!, \$soundDesc: String!) {
+        request: uploadVideo(desc: \$desc, soundDesc: \$soundDesc) {
           ... on UploadableVideo {id uploadURL}
           ... on APIError {error}
         }
       }
     """),
+    variables: {
+      "desc": desc,
+      "soundDesc": soundDesc,
+    },
   ));
 
   if (query.hasException) {
@@ -36,10 +41,10 @@ Future<UploadableVideo> requestUpload() async {
   );
 }
 
-Future<bool> uploadVideo(UploadableVideo builder, PickedFile file) async {
+Future<bool> uploadVideo(UploadableVideo builder, String filename) async {
   var res = await put(
     builder.url,
-    body: await file.readAsBytes(),
+    body: await File(filename).readAsBytes(),
     headers: {"Content-Type": "video/mp4"},
   );
 

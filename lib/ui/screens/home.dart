@@ -60,7 +60,7 @@ class _HomeTabState extends State<HomeTab> {
               _videoControllers[_selectedPage].update(info);
           });
         }
-      } else if (info.type == NavInfoType.Profile) {
+      } else if (info.type == NavInfoType.Overlay) {
         if (info.to != 0 && info.from != 0) return;
         if (_selectedPage > _videoControllers.length) return;
 

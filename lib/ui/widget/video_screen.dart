@@ -558,8 +558,10 @@ Widget fullscreenAspectRatio({
             ),
           ),
         ),
-        Stack(
-          children: stack,
+        SafeArea(
+          child: Stack(
+            children: stack,
+          ),
         ),
       ],
     ),

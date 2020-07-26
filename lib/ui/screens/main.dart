@@ -71,14 +71,30 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: theme.textTheme.bodyText1.color,
         unselectedItemColor: theme.accentColor,
         onTap: (index) {
-          setState(() {
-            _changeNotifier.sink.add(NavInfo(
-              type: NavInfoType.Tab,
-              from: _selectedTab,
-              to: index,
-            ));
-            _selectedTab = index;
-          });
+          // Special logic for the create tab
+          if (index == 2) {
+            _changeNotifier.sink.add(NavInfo(type: NavInfoType.Overlay, from: _selectedTab, to: -1));
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return FullscreenCamera();
+                },
+                transitionsBuilder: slideFrom(0.0, 1.0),
+              ),
+            ).then((_) {
+              _changeNotifier.sink.add(NavInfo(type: NavInfoType.Overlay, from: -1, to: _selectedTab));
+            });
+          } else {
+            setState(() {
+              _changeNotifier.sink.add(NavInfo(
+                type: NavInfoType.Tab,
+                from: _selectedTab,
+                to: index,
+              ));
+              _selectedTab = index;
+            });
+          }
         },
       ),
     );
@@ -91,10 +107,9 @@ class _MainScreenState extends State<MainScreen> {
     return NotificationListener(
       onNotification: (notification) {
         if (notification is ProfileScreenNotification) {
-          logger
-              .i("Profile screen ${notification.opened ? "opened" : "closed"}");
+          logger.i("Profile screen ${notification.opened ? "opened" : "closed"}");
           _changeNotifier.sink.add(NavInfo(
-            type: NavInfoType.Profile,
+            type: NavInfoType.Overlay,
             from: notification.opened ? _selectedTab : -1,
             to: notification.opened ? -1 : _selectedTab,
           ));
@@ -112,7 +127,7 @@ class _MainScreenState extends State<MainScreen> {
                   shouldTriggerChange: _changeNotifier.stream,
                 ),
                 Container(),
-                _selectedTab == 2 ? CreateTab() : Container(),
+                Container(),
                 Container(
                   color: Colors.red,
                   alignment: Alignment.center,
