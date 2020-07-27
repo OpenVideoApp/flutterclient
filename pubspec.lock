@@ -32,10 +32,12 @@ packages:
   camera:
     dependency: "direct main"
     description:
-      name: camera
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.5.8+2"
+      path: "packages/camera"
+      ref: camera-fix-android-audio
+      resolved-ref: "0a5fce6f1788aca30cca38e9d0beda8d90e94184"
+      url: "https://github.com/DealerPeak/plugins.git"
+    source: git
+    version: "0.5.8+4"
   charcode:
     dependency: transitive
     description:
@@ -111,6 +113,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_ffmpeg:
+    dependency: "direct main"
+    description:
+      name: flutter_ffmpeg
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.10"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

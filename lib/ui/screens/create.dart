@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:flutterclient/api/upload.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
@@ -10,6 +11,7 @@ import 'package:flutterclient/ui/widget/video_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
+final ffmpeg = new FlutterFFmpeg();
 List<CameraDescription> cameras;
 
 Future<void> initCameras() async {
@@ -18,17 +20,14 @@ Future<void> initCameras() async {
 
 class RecordingController {
   void Function(RecordingController) callback;
-  Duration recorded = Duration.zero;
-  bool startedRecording = false;
+  int recorded = 0;
   bool recording = false;
 
   RecordingController({@required this.callback});
 
   void toggle() {
-    logger.i("toggle $startedRecording");
     recording = !recording;
     callback(this);
-    startedRecording = true;
   }
 }
 
@@ -172,6 +171,12 @@ class _NextButton extends StatelessWidget {
   }
 }
 
+class VideoClip {
+  String filename;
+
+  VideoClip(this.filename);
+}
+
 class VideoDetailsScreen extends StatefulWidget {
   final String filename;
 
@@ -262,9 +267,10 @@ class _VideoDetailsScreenState extends State<VideoDetailsScreen> {
 }
 
 class RecordingEditingScreen extends StatefulWidget {
-  final String filename;
+  final String dir;
+  final List<VideoClip> clips;
 
-  RecordingEditingScreen({@required this.filename});
+  RecordingEditingScreen({@required this.dir, @required this.clips});
 
   @override
   _RecordingEditingScreenState createState() => _RecordingEditingScreenState();
@@ -277,27 +283,51 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.file(File(widget.filename));
-    _controllerFuture = _controller.initialize();
-    _controllerFuture.then((_) {
-      _controller.setLooping(true);
-      _controller.play();
+
+    _controllerFuture = _writeVideoList().then((file) {
+      var output = widget.dir + "/output.mp4";
+      return ffmpeg.execute("-f concat -safe 0 -i $file -c copy $output").then((rc) async {
+        logger.i("FFmpeg finished with return code $rc");
+        if (rc == 0) return;
+        _controller = VideoPlayerController.file(File(output));
+        return _controller.initialize().then((_) {
+          _controller.setLooping(true);
+          _controller.play();
+        });
+      });
     });
+
+  }
+
+  Future<String> _writeVideoList() async {
+    var file = File(widget.dir + "/videos.txt");
+    if (await file.exists()) {
+      await file.delete();
+    }
+    String files = "";
+    for (var clip in widget.clips) {
+      logger.i("Adding file ${clip.filename}!");
+      files += "file '" + widget.dir + clip.filename + "'\n";
+    }
+    await file.writeAsString(files);
+    logger.i("File: ${file.readAsStringSync()}");
+    return file.path;
   }
 
   @override
   Widget build(BuildContext context) {
+    bool controllerReady = _controller != null && _controller.value.initialized;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: fullscreenAspectRatio(
           context: context,
-          aspectRatio: _controller.value.aspectRatio,
+          aspectRatio: controllerReady ? _controller.value.aspectRatio : (1080.0/1920.0),
           video: (w, h) {
             return FutureBuilder(
               future: _controllerFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
+                if (snapshot.connectionState == ConnectionState.done && controllerReady) {
                   return Container(
                     width: _controller.value.size.width,
                     height: _controller.value.size.height,
@@ -317,7 +347,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
           },
           stack: <Widget>[
             CloseButton(icon: Icons.arrow_back),
-            _NextButton(
+            if (controllerReady) _NextButton(
               text: "Next",
               onPressed: () {
                 _controller.pause().then((_) {
@@ -326,7 +356,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) {
                         return VideoDetailsScreen(
-                          filename: widget.filename,
+                          filename: widget.clips[0].filename,
                         );
                       },
                       transitionsBuilder: slideFrom(1, 0),
@@ -363,55 +393,137 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
   }
 }
 
+class CameraRecordingController {
+  RecordingController recordingController;
+  CameraController cameraController;
+
+  VoidCallback _listener;
+
+  bool _usingBackCam = false;
+  int curClip = 0;
+
+  String tempDir;
+  List<VideoClip> clips = [];
+
+  CameraRecordingController(this._listener) {
+    getTemporaryDirectory().then((dir) {
+      tempDir = dir.path + "/rec";
+      restartRecording();
+    });
+
+    recordingController = RecordingController(callback: _recordingCallback);
+
+    initCameras().then((_) {
+      if (cameras.length < 1) return;
+      _initCamera();
+    });
+  }
+
+  Future<void> _initCamera() async {
+    cameraController = CameraController(cameras[getSelectedCameraID()], ResolutionPreset.high);
+    return cameraController.initialize().then((_) {
+      cameraController.prepareForVideoRecording();
+      _listener();
+    });
+  }
+
+  Future<void> toggleCamera() async {
+    if (cameras.length < 2) return;
+    _usingBackCam = !_usingBackCam;
+    if (recordingController.recording) {
+      await cameraController.stopVideoRecording();
+    }
+    await cameraController.dispose();
+    await _initCamera();
+    if (!cameraReady()) {
+      logger.w("Camera is not ready after toggling");
+      return;
+    }
+
+    if (recordingController.recording) {
+      await startRecording();
+    }
+
+    _listener();
+  }
+
+  bool cameraReady() {
+    return cameraController != null && cameraController.value.isInitialized;
+  }
+
+  int getSelectedCameraID() {
+    if (cameras.length == 1) return 0;
+    return _usingBackCam ? 0 : 1;
+  }
+
+  Future<void> restartRecording() async {
+    clips = [];
+    curClip = 0;
+    var recDir = Directory(tempDir);
+    if (recDir.existsSync()) {
+      await recDir.delete(recursive: true);
+    }
+    await recDir.create(recursive: true);
+  }
+
+  Future<void> startRecording() async {
+    logger.i("Started recording");
+    var path = "/clip_$curClip.mp4";
+    await cameraController.startVideoRecording(tempDir + path);
+    clips.add(VideoClip(path));
+    curClip++;
+  }
+
+  Future<void> _recordingCallback(RecordingController controller) async {
+    if (controller.recording) {
+      await startRecording();
+      _listener();
+    } else {
+      logger.i("Recording paused");
+      cameraController.stopVideoRecording();
+      _listener();
+    }
+  }
+
+  Widget getPreview() {
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    return GestureDetector(
+      onDoubleTap: toggleCamera,
+      child: CameraPreview(cameraController),
+    );
+  }
+
+  void dispose() {
+    cameraController?.dispose();
+  }
+}
+
 class FullscreenCamera extends StatefulWidget {
   @override
   _FullscreenCameraState createState() => _FullscreenCameraState();
 }
 
 class _FullscreenCameraState extends State<FullscreenCamera> {
-  CameraController _cameraController;
-  RecordingController _recordingController;
-  String _tempPath;
+  CameraRecordingController _controller;
+  PageController _modeController;
 
   @override
   void initState() {
     super.initState();
-    _recordingController = RecordingController(callback: (controller) {
-      if (controller.recording) {
-        if (!controller.startedRecording) {
-          logger.i("Started recording");
-          _cameraController.startVideoRecording(_tempPath);
-        } else {
-          logger.i("Recording resumed");
-          _cameraController.resumeVideoRecording();
-        }
-      } else {
-        logger.i("Recording paused");
-        _cameraController.pauseVideoRecording();
-        setState(() {});
-      }
-    });
-    getTemporaryDirectory().then((dir) async {
-      _tempPath = dir.path + "/video.mp4";
-      var file = File(_tempPath);
-      if (await file.exists()) {
-        file.delete();
-      }
-    });
-    initCameras().then((_) {
-      if (cameras.length == 0) return;
-      _cameraController = CameraController(cameras[cameras.length == 1 ? 0 : 1], ResolutionPreset.veryHigh);
-      _cameraController.initialize().then((_) {
-        if (!mounted) return;
-        _cameraController.prepareForVideoRecording();
-        setState(() {});
-      });
-    });
+    _modeController = PageController(
+      initialPage: 1,
+      viewportFraction: 0.15,
+    );
+    _controller = CameraRecordingController(() => setState(() {}));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_cameraController == null || !_cameraController.value.isInitialized) {
+    CameraController cameraController = _controller.cameraController;
+    if (cameraController == null || !cameraController.value.isInitialized) {
       return Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
@@ -429,37 +541,35 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
         body: SafeArea(
           child: fullscreenAspectRatio(
             context: context,
-            aspectRatio: _cameraController.value.aspectRatio,
+            aspectRatio: cameraController.value.aspectRatio,
             video: (width, height) {
               return Container(
                 width: width,
                 height: height,
-                child: CameraPreview(_cameraController),
+                child: _controller.getPreview(),
               );
             },
             stack: <Widget>[
               CloseButton(),
-              if (_recordingController.startedRecording)
+              if (_controller.curClip > 0)
                 _NextButton(
                   text: "Done",
                   onPressed: () {
-                    if (_recordingController.recording) return;
-                    _cameraController.stopVideoRecording().then((_) {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) {
-                            return RecordingEditingScreen(
-                              filename: _tempPath,
-                            );
-                          },
-                          transitionsBuilder: slideFrom(1, 0),
-                        ),
-                      ).then((_) {
-                        setState(() {
-                          File(_tempPath).delete();
-                          _recordingController.startedRecording = false;
-                        });
+                    if (_controller.recordingController.recording) return;
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) {
+                          return RecordingEditingScreen(
+                            dir: _controller.tempDir,
+                            clips: _controller.clips,
+                          );
+                        },
+                        transitionsBuilder: slideFrom(1, 0),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        _controller.restartRecording();
                       });
                     });
                   },
@@ -469,7 +579,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
                 left: 0,
                 right: 0,
                 child: RecordingButton(
-                  controller: _recordingController,
+                  controller: _controller.recordingController,
                 ),
               ),
             ],
@@ -483,7 +593,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
             children: <Widget>[
               Expanded(
                 child: PageView(
-                  controller: PageController(viewportFraction: 0.15, initialPage: 1),
+                  controller: _modeController,
                   children: <Widget>[
                     VideoTypeSetting("15s"),
                     VideoTypeSetting("30s"),
@@ -508,7 +618,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
 
   @override
   void dispose() {
-    _cameraController?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 }

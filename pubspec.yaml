@@ -11,9 +11,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  camera:
+    git:
+      url: https://github.com/DealerPeak/plugins.git
+      path: packages/camera
+      ref: camera-fix-android-audio
+  flutter_ffmpeg: ^0.2.10
   graphql_flutter: "^3.0.0"
   video_player: ">=0.10.5 <2.0.0"
-  camera: ">=0.5.8"
   image_picker: ">=0.6.7"
   logger: "^0.6.0"
   device_info: ">=0.4.0 <2.0.0"
