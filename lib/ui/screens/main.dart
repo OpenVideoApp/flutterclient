@@ -20,7 +20,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedTab;
-  StreamController _changeNotifier = new StreamController.broadcast();
+  StreamController<NavInfo> _changeNotifier = new StreamController.broadcast();
 
   @override
   void initState() {

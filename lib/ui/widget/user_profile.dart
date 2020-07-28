@@ -5,6 +5,7 @@ import 'package:flutterclient/api/user.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/screens/profile.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/widget/buttons.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class ProfileUpdatedNotification extends Notification {}

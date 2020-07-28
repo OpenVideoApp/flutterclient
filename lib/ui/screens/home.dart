@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutterclient/api/video.dart';
-import 'package:flutterclient/ui/widget/video_screen.dart';
-import 'package:flutterclient/ui/widget/comments_popup.dart';
-import 'package:flutterclient/ui/uihelpers.dart';
 import 'package:flutterclient/logging.dart';
+import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/widget/video/components.dart';
+import 'package:flutterclient/ui/widget/video/controller.dart';
+import 'package:flutterclient/ui/widget/video/screen.dart';
+import 'package:flutterclient/ui/widget/comments_popup.dart';
 
 class HomeTab extends StatefulWidget {
-  final Stream shouldTriggerChange;
+  final Stream<NavInfo> shouldTriggerChange;
 
   HomeTab({@required this.shouldTriggerChange});
 
@@ -18,8 +20,10 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  StreamSubscription _streamSubscription;
-  List<VideoScreenController> _videoControllers = [];
+  StreamController<VideoNavInfo> _changeNotifier = new StreamController.broadcast();
+  StreamSubscription<NavInfo> _streamSubscription;
+  List<Video> _videos = [];
+  Map<int, VideoScreenController> _videoControllers = {};
   PageController _pageController;
   int _selectedPage = 0;
   bool _commentsVisible = false;
@@ -29,65 +33,21 @@ class _HomeTabState extends State<HomeTab> {
     super.initState();
 
     fetchVideos(context, count: 5).then((videos) {
-      for (int video = 0; video < videos.length; video++) {
-        setState(() {
-          _videoControllers.add(VideoScreenController(
-            index: _videoControllers.length,
-            video: videos[video],
-            selected: _videoControllers.length == 0,
-            callback: () => setState(() => {}),
-          ));
-        });
-      }
+      setState(() {
+        _videos.addAll(videos);
+      });
     });
 
     _pageController = PageController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      int realPage = _pageController.page.toInt();
-      if (_videoControllers.length > realPage) {
-        _videoControllers[realPage].selected = true;
-      }
-    });
-
     _streamSubscription = widget.shouldTriggerChange.listen((info) {
-      if (info.type == NavInfoType.Tab) {
-        logger.i("Changed tab from ${info.from} to ${info.to}");
-        if ((info.from == 0 && info.to != 0) ||
-            (info.to == 0 && info.from != 0)) {
-          setState(() {
-            if (_videoControllers.length > _selectedPage)
-              _videoControllers[_selectedPage].update(info);
-          });
-        }
-      } else if (info.type == NavInfoType.Overlay) {
-        if (info.to != 0 && info.from != 0) return;
-        if (_selectedPage > _videoControllers.length) return;
-
-        var controller = _videoControllers[_selectedPage];
-        if (!controller.active) return;
-
-        setState(() {
-          if (info.to == 0)
-            controller.play();
-          else if (info.from == 0 && controller.isPlaying())
-            controller.pause(forced: true);
-        });
-      }
+      _changeNotifier.add(VideoNavInfo(
+        type: info.type,
+        from: info.from,
+        to: info.to,
+        selectedVideo: _selectedPage,
+      ));
     });
-  }
-
-  List<Widget> getVideos() {
-    List<Widget> videos = [];
-
-    for (int video = 0; video < _videoControllers.length; video++) {
-      videos.add(VideoScreen(_videoControllers[video]));
-    }
-
-    if (_videoControllers.length == 0) {
-      videos.add(makeEmptyVideo());
-    }
-    return videos;
   }
 
   @override
@@ -102,51 +62,81 @@ class _HomeTabState extends State<HomeTab> {
         }
         return false;
       },
-      child: PageView(
+      child: PageView.builder(
         controller: _pageController,
         scrollDirection: Axis.vertical,
-        children: getVideos(),
-        physics: _commentsVisible
-            ? NeverScrollableScrollPhysics()
-            : PageScrollPhysics(),
+        itemBuilder: (context, index) {
+          if (index >= _videos.length) {
+            return EmptyVideo();
+          }
+          var controller = getVideoController(index);
+          return VideoScreen(
+            controller: controller,
+            notifier: _changeNotifier.stream,
+            index: index,
+          );
+        },
+        itemCount: _videos.length,
+        physics: _commentsVisible ? NeverScrollableScrollPhysics() : PageScrollPhysics(),
         onPageChanged: (page) {
-          setState(() {
-            if (_selectedPage != page) {
-              NavInfo info = new NavInfo(
-                type: NavInfoType.Video,
-                from: _selectedPage,
-                to: page,
-              );
-              // TODO: only update where necessary
-              for (int video = 0; video < _videoControllers.length; video++) {
-                _videoControllers[video].update(info);
-              }
-            }
+          logger.i("Selected page $page");
+          _changeNotifier.sink.add(VideoNavInfo(
+            type: NavInfoType.Video,
+            from: _selectedPage,
+            to: page,
+            selectedVideo: page,
+          ));
 
-            if (_selectedPage > _videoControllers.length - 5) {
-              // Load from the server if no unloaded videos are left
-              fetchVideos(context).then((videos) {
-                setState(() {
-                  _videoControllers.add(VideoScreenController(
-                    index: _videoControllers.length,
-                    video: videos[0],
-                    callback: () => setState(() {}),
-                  ));
-                });
+          _selectedPage = page;
+
+          // Copy key set to avoid concurrent modification issues
+          var controllerKeys = _videoControllers.keys.toList();
+
+          for (var key in controllerKeys) {
+            var distance = (key - _selectedPage).abs();
+            if (distance > 5) {
+              logger.i("Removing video screen controller #$key with distance $distance");
+              _videoControllers[key].dispose();
+              _videoControllers.remove(key);
+            }
+          }
+
+          // Ensure there are some videos pre-loaded in a range around the selected page
+          for (var i = _selectedPage - 2; i < _selectedPage + 3; i++) {
+            if (i < 0 || i >= _videos.length) {
+              continue;
+            }
+            getVideoController(i);
+          }
+
+          if (_selectedPage > _videos.length - 5) {
+            // Load from the server if no unloaded videos are left
+            fetchVideos(context).then((videos) {
+              setState(() {
+                _videos.addAll(videos);
               });
-            }
-
-            _selectedPage = page;
-          });
+            });
+          }
         },
       ),
     );
   }
 
+  VideoScreenController getVideoController(int index) {
+    return _videoControllers.putIfAbsent(index, () {
+      logger.i("Creating video screen controller #$index");
+      return VideoScreenController(index: index, video: _videos[index]);
+    });
+  }
+
   @override
   void dispose() {
+    for (var controller in _videoControllers.values) {
+      controller.dispose();
+    }
     _pageController.dispose();
     _streamSubscription.cancel();
+    _changeNotifier.close();
     super.dispose();
   }
 }

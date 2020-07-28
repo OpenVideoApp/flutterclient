@@ -3,7 +3,7 @@ import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/api/user.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
-import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/widget/buttons.dart';
 import 'package:flutterclient/ui/widget/custom_appbar.dart';
 import 'package:flutterclient/ui/widget/user_profile.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';

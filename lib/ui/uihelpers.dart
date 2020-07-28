@@ -1,8 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutterclient/ui/widget/video_screen.dart';
 
 enum NavInfoType { Tab, Video, Overlay }
 
@@ -11,6 +9,17 @@ class NavInfo {
   int from, to;
 
   NavInfo({@required this.type, @required this.from, @required this.to});
+}
+
+class VideoNavInfo extends NavInfo {
+  int selectedVideo;
+
+  VideoNavInfo({
+    NavInfoType type,
+    int from,
+    int to,
+    @required this.selectedVideo,
+  }) : super(type: type, from: from, to: to);
 }
 
 // Applies bold formatting to tags
@@ -60,172 +69,7 @@ String compactDouble(double number, {int iteration = 0}) {
   return compactDouble(n / 1000, iteration: iteration + 1);
 }
 
-class LinearVideoProgressIndicator extends StatefulWidget {
-  final VideoScreenController controller;
-
-  LinearVideoProgressIndicator({@required this.controller});
-
-  @override
-  _LinearVideoProgressIndicatorState createState() =>
-      _LinearVideoProgressIndicatorState();
-}
-
-class _LinearVideoProgressIndicatorState
-    extends State<LinearVideoProgressIndicator>
-    with SingleTickerProviderStateMixin {
-  Ticker _ticker;
-  double _progress = 0;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _ticker = createTicker((elapsed) {
-      widget.controller.progress.then((progress) {
-        if (progress != _progress) {
-          setState(() {
-            _progress = progress;
-          });
-        }
-      });
-    });
-
-    _ticker.start();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LinearProgressIndicator(
-      value: _progress,
-      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-      backgroundColor: Colors.transparent,
-    );
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-}
-
-class AutoScrollingText extends StatefulWidget {
-  final List<String> text;
-  final double speed;
-  final double padding;
-
-  AutoScrollingText({@required this.text, this.speed = 0.5, this.padding = 5});
-
-  @override
-  _AutoScrollingTextState createState() => _AutoScrollingTextState();
-}
-
-class _AutoScrollingTextState extends State<AutoScrollingText>
-    with SingleTickerProviderStateMixin {
-  GlobalKey _key = GlobalKey();
-  ScrollController _scrollController;
-  Ticker _ticker;
-  double _scrollPos = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = new ScrollController();
-    _ticker = createTicker((elapsed) => tick(elapsed));
-    _ticker.start();
-  }
-
-  void tick(Duration elapsed) {
-    final RenderBox renderBox = _key.currentContext.findRenderObject();
-    final size = renderBox.size;
-
-    _scrollController.jumpTo(_scrollPos);
-    _scrollPos += widget.speed;
-
-    if (_scrollPos > size.width / 3) {
-      _scrollPos = 0;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Widget> lines = [];
-
-    for (var line in widget.text) {
-      lines.add(formatText(line));
-    }
-
-    var col = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines,
-    );
-
-    var padding = Padding(
-      padding: EdgeInsets.only(left: widget.padding),
-    );
-
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      physics: NeverScrollableScrollPhysics(),
-      child: Row(
-        key: _key,
-        children: <Widget>[col, padding, col, padding, col, padding],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-}
-
-class BorderedFlatButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Color textColor, backgroundColor, borderColor;
-  final double width, height;
-  final EdgeInsets padding;
-  final EdgeInsets margin;
-  final Widget text;
-
-  BorderedFlatButton({
-    @required this.onTap,
-    @required this.text,
-    this.textColor = Colors.black,
-    this.backgroundColor = Colors.white,
-    this.borderColor = Colors.black,
-    this.width,
-    this.height,
-    this.padding = EdgeInsets.zero,
-    this.margin = EdgeInsets.zero,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: this.onTap,
-      child: Container(
-        width: this.width,
-        height: this.height,
-        padding: this.padding,
-        margin: this.margin,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: this.backgroundColor,
-          border: Border.all(color: this.borderColor),
-        ),
-        child: text,
-      ),
-    );
-  }
-}
-
-PageRouteBuilder zoomTo(
-    Widget Function(BuildContext, Animation<double>, Animation<double>)
-        pageBuilder) {
+PageRouteBuilder zoomTo(Widget Function(BuildContext, Animation<double>, Animation<double>) pageBuilder) {
   return PageRouteBuilder(
     pageBuilder: pageBuilder,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -253,53 +97,4 @@ Widget Function(BuildContext, Animation<double>, Animation<double>, Widget) slid
       child: child,
     );
   };
-}
-
-
-class GradientButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final Widget child;
-  final List<Color> colors;
-
-  GradientButton({@required this.onPressed, this.child, this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return RaisedButton(
-      padding: EdgeInsets.zero,
-      onPressed: this.onPressed,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.transparent),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: Ink(
-        width: double.infinity,
-        height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          gradient: this.colors == null
-              ? null
-              : LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            stops: [0, 1],
-            colors: this.colors,
-          ),
-          color: this.colors != null ? null : Colors.white,
-        ),
-        child: Container(
-          alignment: Alignment.center,
-          child: DefaultTextStyle(
-            style: TextStyle(
-              fontFamily: "Roboto",
-              fontWeight: FontWeight.w500,
-              fontSize: 18.0,
-              color: this.colors == null ? Colors.black.withOpacity(0.5) : Colors.white,
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
 }

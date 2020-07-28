@@ -5,7 +5,7 @@ import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/screens/main.dart';
-import 'package:flutterclient/ui/uihelpers.dart';
+import 'package:flutterclient/ui/widget/buttons.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';

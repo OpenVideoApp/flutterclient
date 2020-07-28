@@ -3,15 +3,15 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:flutterclient/api/upload.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
-import 'package:flutterclient/ui/widget/video_screen.dart';
+import 'package:flutterclient/ui/widget/buttons.dart';
+import 'package:flutterclient/ui/widget/video/components.dart';
+import 'package:flutterclient/video-tools/clips.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
-final ffmpeg = new FlutterFFmpeg();
 List<CameraDescription> cameras;
 
 Future<void> initCameras() async {
@@ -171,83 +171,6 @@ class _NextButton extends StatelessWidget {
   }
 }
 
-class VideoClip {
-  String filename;
-  String extension;
-  bool usesBackCam;
-  bool processed = false;
-
-  VideoClip({@required this.filename, this.extension = "mp4", this.usesBackCam = false});
-}
-
-class VideoClips {
-  Future<void> _future;
-  List<VideoClip> _clips;
-
-  VideoClips() {
-    _future = Future(() {});
-    _clips = [];
-  }
-
-  Future<void> processClip(String dir, int id) async {
-    if (id >= _clips.length) {
-      logger.w("Tried to process clip #$id but only ${_clips.length} clips are saved!");
-      return;
-    }
-    var clip = _clips[id];
-    var path = dir + clip.filename + "." + clip.extension;
-    var processedPath = dir + clip.filename + "-processed." + clip.extension;
-
-    var filter = "fps=fps=30" + (!clip.usesBackCam ? ",hflip" : "");
-    var meta = "rotate='90'";
-
-    _future = _future.then((_) {
-      logger.i("Processing clip ${clip.filename}..");
-      return ffmpeg.execute("-i $path -b:v 2M -vf '$filter' -metadata:s:v $meta $processedPath").then((rc) {
-        clip.processed = true;
-        if (rc != 0) {
-          logger.w("Failed to process clip '${clip.filename}'! Received return code $rc");
-        } else {
-          clip.filename += "-processed";
-        }
-      });
-    });
-  }
-
-  void add(VideoClip clip) async {
-    _clips.add(clip);
-  }
-
-  Future<String> writeList(String dir, String filename) async {
-    var filePath = dir + "/" + filename;
-    _future = _future.then((_) async {
-      var file = File(filePath);
-      if (await file.exists()) {
-        await file.delete();
-      }
-      String files = "";
-      for (var clip in this._clips) {
-      var path = dir + clip.filename + "." + clip.extension;
-      logger.i("Adding clip ${clip.filename} to list with path '$path'!");
-      files += "file '$path'\n";
-      }
-      await file.writeAsString(files);
-      return file.path;
-    });
-    return _future.then((_) {
-      return filePath;
-    });
-  }
-
-  Future<bool> combine(String dir, String filename) async {
-    var list = await writeList(dir, "videos.txt");
-    var output = dir + "/" + filename;
-    var rc = await ffmpeg.execute("-f concat -safe 0 -i $list -c copy $output");
-    logger.i("FFmpeg finished with return code $rc");
-    return rc == 0;
-  }
-}
-
 class VideoDetailsScreen extends StatefulWidget {
   final String filename;
 
@@ -338,10 +261,9 @@ class _VideoDetailsScreenState extends State<VideoDetailsScreen> {
 }
 
 class RecordingEditingScreen extends StatefulWidget {
-  final String dir;
   final VideoClips clips;
 
-  RecordingEditingScreen({@required this.dir, @required this.clips});
+  RecordingEditingScreen({@required this.clips});
 
   @override
   _RecordingEditingScreenState createState() => _RecordingEditingScreenState();
@@ -350,16 +272,14 @@ class RecordingEditingScreen extends StatefulWidget {
 class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
   VideoPlayerController _controller;
   Future<void> _controllerFuture;
-  String _filename;
 
   @override
   void initState() {
     super.initState();
 
-    _filename = widget.dir + "/output.mp4";
-    _controllerFuture = widget.clips.combine(widget.dir, "output.mp4").then((success) {
+    _controllerFuture = widget.clips.combine().then((success) {
       if (!success) return false;
-      _controller = VideoPlayerController.file(File(_filename));
+      _controller = VideoPlayerController.file(File(widget.clips.getOutputPath()));
       return _controller.initialize().then((_) {
         _controller.setLooping(true);
         setState(() {
@@ -375,8 +295,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: fullscreenAspectRatio(
-          context: context,
+        child: FullscreenAspectRatio(
           aspectRatio: controllerReady ? _controller.value.aspectRatio : (1080.0 / 1920.0),
           video: (w, h) {
             return FutureBuilder(
@@ -401,7 +320,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
               },
             );
           },
-          stack: <Widget>[
+          children: <Widget>[
             CloseButton(icon: Icons.arrow_back),
             if (controllerReady)
               _NextButton(
@@ -413,7 +332,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
                       PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) {
                           return VideoDetailsScreen(
-                            filename: _filename,
+                            filename: widget.clips.getOutputPath(),
                           );
                         },
                         transitionsBuilder: slideFrom(1, 0),
@@ -457,15 +376,11 @@ class CameraRecordingController {
   VoidCallback _listener;
 
   bool _usingBackCam = false;
-  int curClip = 0;
-
-  String tempDir;
-  VideoClips clips = VideoClips();
+  VideoClips clips;
 
   CameraRecordingController(this._listener) {
     getTemporaryDirectory().then((dir) {
-      tempDir = dir.path + "/rec";
-      restartRecording();
+      clips = VideoClips(dir: dir.path + "/rec");
     });
 
     recordingController = RecordingController(callback: _recordingCallback);
@@ -489,8 +404,7 @@ class CameraRecordingController {
     _usingBackCam = !_usingBackCam;
     if (recordingController.recording) {
       await cameraController.stopVideoRecording();
-      clips.processClip(tempDir, curClip);
-      curClip++;
+      clips.processLatestClip();
     }
     await cameraController.dispose();
     await _initCamera();
@@ -515,21 +429,10 @@ class CameraRecordingController {
     return _usingBackCam ? 0 : 1;
   }
 
-  Future<void> restartRecording() async {
-    clips = VideoClips();
-    curClip = 0;
-    var recDir = Directory(tempDir);
-    if (recDir.existsSync()) {
-      await recDir.delete(recursive: true);
-    }
-    await recDir.create(recursive: true);
-  }
-
   Future<void> startRecording() async {
     logger.i("Started recording");
-    var path = "/clip_$curClip";
-    await cameraController.startVideoRecording(tempDir + path + ".mp4");
-    clips.add(VideoClip(filename: path, usesBackCam: _usingBackCam));
+    var clipFile = clips.create(usingBackCam: _usingBackCam);
+    await cameraController.startVideoRecording(clipFile);
   }
 
   Future<void> _recordingCallback(RecordingController controller) async {
@@ -539,8 +442,7 @@ class CameraRecordingController {
     } else {
       logger.i("Recording paused");
       cameraController.stopVideoRecording();
-      clips.processClip(tempDir, curClip);
-      curClip++;
+      clips.processLatestClip();
       _listener();
     }
   }
@@ -599,8 +501,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
       return Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
-          child: fullscreenAspectRatio(
-            context: context,
+          child: FullscreenAspectRatio(
             aspectRatio: cameraController.value.aspectRatio,
             video: (width, height) {
               return Container(
@@ -609,9 +510,9 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
                 child: _controller.getPreview(),
               );
             },
-            stack: <Widget>[
+            children: <Widget>[
               CloseButton(),
-              if (_controller.curClip > 0)
+              if (_controller.clips.length > 0)
                 _NextButton(
                   text: "Done",
                   onPressed: () {
@@ -621,7 +522,6 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
                       PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) {
                           return RecordingEditingScreen(
-                            dir: _controller.tempDir,
                             clips: _controller.clips,
                           );
                         },
@@ -629,7 +529,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
                       ),
                     ).then((_) {
                       setState(() {
-                        _controller.restartRecording();
+                        _controller.clips.reset();
                       });
                     });
                   },
