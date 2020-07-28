@@ -2,6 +2,64 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+class FloatingCloseButton extends StatelessWidget {
+  final IconData icon;
+
+  FloatingCloseButton({this.icon = Icons.clear});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: EdgeInsets.all(5),
+        child: GestureDetector(
+          onTap: () {
+            Navigator.of(context).pop();
+          },
+          child: Padding(
+            padding: EdgeInsets.all(15),
+            child: Icon(
+              this.icon,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FloatingNextButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String text;
+
+  FloatingNextButton({@required this.onPressed, @required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topRight,
+      child: Padding(
+        padding: EdgeInsets.all(5),
+        child: GestureDetector(
+          onTap: onPressed,
+          child: Padding(
+            padding: EdgeInsets.all(15),
+            child: Text(
+              this.text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 19,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class BorderedFlatButton extends StatelessWidget {
   final VoidCallback onTap;
   final Color textColor, backgroundColor, borderColor;

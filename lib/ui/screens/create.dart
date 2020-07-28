@@ -113,64 +113,6 @@ class _RecordingButtonState extends State<RecordingButton> with SingleTickerProv
   }
 }
 
-class CloseButton extends StatelessWidget {
-  final IconData icon;
-
-  CloseButton({this.icon = Icons.clear});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Padding(
-        padding: EdgeInsets.all(5),
-        child: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pop();
-          },
-          child: Padding(
-            padding: EdgeInsets.all(15),
-            child: Icon(
-              this.icon,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NextButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final String text;
-
-  _NextButton({@required this.onPressed, @required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topRight,
-      child: Padding(
-        padding: EdgeInsets.all(5),
-        child: GestureDetector(
-          onTap: onPressed,
-          child: Padding(
-            padding: EdgeInsets.all(15),
-            child: Text(
-              this.text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class VideoDetailsScreen extends StatefulWidget {
   final String filename;
 
@@ -183,6 +125,7 @@ class VideoDetailsScreen extends StatefulWidget {
 class _VideoDetailsScreenState extends State<VideoDetailsScreen> {
   TextEditingController _videoDescController;
   TextEditingController _soundDescController;
+  bool _uploading = false;
 
   @override
   void initState() {
@@ -231,16 +174,50 @@ class _VideoDetailsScreenState extends State<VideoDetailsScreen> {
               padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               child: GradientButton(
                 onPressed: () async {
+                  if (_uploading) {
+                    return;
+                  }
+
+                  setState(() {
+                    _uploading = true;
+                  });
+
                   var builder = await requestUpload(_videoDescController.text, _soundDescController.text);
-                  if (builder == null) return;
+                  if (builder == null) {
+                    setState(() {
+                      _uploading = false;
+                    });
+                    return;
+                  }
 
                   uploadVideo(builder, widget.filename).then((success) {
                     logger.i("Uploaded video: $success");
+                    _uploading = false;
+                    Navigator.popUntil(context, ModalRoute.withName(Navigator.defaultRouteName));
                   }).catchError((error) {
                     logger.w("Upload failed: $error}");
+                    setState(() {
+                      _uploading = false;
+                    });
+                    Scaffold.of(context).showSnackBar(SnackBar(content: Text("Video Upload Failed :(")));
                   });
                 },
-                child: Text("Upload"),
+                child: _uploading ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          backgroundColor: Colors.transparent,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      SizedBox(width: 29),
+                      Text("Uploading"),
+                    ],
+                  ) : Text("Upload"),
                 colors: [Colors.green, Colors.lightGreen],
               ),
             ),
@@ -321,9 +298,9 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
             );
           },
           children: <Widget>[
-            CloseButton(icon: Icons.arrow_back),
+            FloatingCloseButton(icon: Icons.arrow_back),
             if (controllerReady)
-              _NextButton(
+              FloatingNextButton(
                 text: "Next",
                 onPressed: () {
                   _controller.pause().then((_) {
@@ -490,7 +467,7 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
         backgroundColor: Colors.black,
         body: SafeArea(
           child: Stack(children: <Widget>[
-            CloseButton(),
+            FloatingCloseButton(),
             Center(
               child: CircularProgressIndicator(),
             ),
@@ -511,9 +488,9 @@ class _FullscreenCameraState extends State<FullscreenCamera> {
               );
             },
             children: <Widget>[
-              CloseButton(),
+              FloatingCloseButton(),
               if (_controller.clips.length > 0)
-                _NextButton(
+                FloatingNextButton(
                   text: "Done",
                   onPressed: () {
                     if (_controller.recordingController.recording) return;
