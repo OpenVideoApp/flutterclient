@@ -173,8 +173,79 @@ class _NextButton extends StatelessWidget {
 
 class VideoClip {
   String filename;
+  String extension;
+  bool usesBackCam;
+  bool processed = false;
 
-  VideoClip(this.filename);
+  VideoClip({@required this.filename, this.extension = "mp4", this.usesBackCam = false});
+}
+
+class VideoClips {
+  Future<void> _future;
+  List<VideoClip> _clips;
+
+  VideoClips() {
+    _future = Future(() {});
+    _clips = [];
+  }
+
+  Future<void> processClip(String dir, int id) async {
+    if (id >= _clips.length) {
+      logger.w("Tried to process clip #$id but only ${_clips.length} clips are saved!");
+      return;
+    }
+    var clip = _clips[id];
+    var path = dir + clip.filename + "." + clip.extension;
+    var processedPath = dir + clip.filename + "-processed." + clip.extension;
+
+    var filter = "fps=fps=30" + (!clip.usesBackCam ? ",hflip" : "");
+    var meta = "rotate='90'";
+
+    _future = _future.then((_) {
+      logger.i("Processing clip ${clip.filename}..");
+      return ffmpeg.execute("-i $path -b:v 2M -vf '$filter' -metadata:s:v $meta $processedPath").then((rc) {
+        clip.processed = true;
+        if (rc != 0) {
+          logger.w("Failed to process clip '${clip.filename}'! Received return code $rc");
+        } else {
+          clip.filename += "-processed";
+        }
+      });
+    });
+  }
+
+  void add(VideoClip clip) async {
+    _clips.add(clip);
+  }
+
+  Future<String> writeList(String dir, String filename) async {
+    var filePath = dir + "/" + filename;
+    _future = _future.then((_) async {
+      var file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+      String files = "";
+      for (var clip in this._clips) {
+      var path = dir + clip.filename + "." + clip.extension;
+      logger.i("Adding clip ${clip.filename} to list with path '$path'!");
+      files += "file '$path'\n";
+      }
+      await file.writeAsString(files);
+      return file.path;
+    });
+    return _future.then((_) {
+      return filePath;
+    });
+  }
+
+  Future<bool> combine(String dir, String filename) async {
+    var list = await writeList(dir, "videos.txt");
+    var output = dir + "/" + filename;
+    var rc = await ffmpeg.execute("-f concat -safe 0 -i $list -c copy $output");
+    logger.i("FFmpeg finished with return code $rc");
+    return rc == 0;
+  }
 }
 
 class VideoDetailsScreen extends StatefulWidget {
@@ -268,7 +339,7 @@ class _VideoDetailsScreenState extends State<VideoDetailsScreen> {
 
 class RecordingEditingScreen extends StatefulWidget {
   final String dir;
-  final List<VideoClip> clips;
+  final VideoClips clips;
 
   RecordingEditingScreen({@required this.dir, @required this.clips});
 
@@ -279,39 +350,23 @@ class RecordingEditingScreen extends StatefulWidget {
 class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
   VideoPlayerController _controller;
   Future<void> _controllerFuture;
+  String _filename;
 
   @override
   void initState() {
     super.initState();
 
-    _controllerFuture = _writeVideoList().then((file) {
-      var output = widget.dir + "/output.mp4";
-      return ffmpeg.execute("-f concat -safe 0 -i $file -c copy $output").then((rc) async {
-        logger.i("FFmpeg finished with return code $rc");
-        if (rc == 0) return;
-        _controller = VideoPlayerController.file(File(output));
-        return _controller.initialize().then((_) {
-          _controller.setLooping(true);
+    _filename = widget.dir + "/output.mp4";
+    _controllerFuture = widget.clips.combine(widget.dir, "output.mp4").then((success) {
+      if (!success) return false;
+      _controller = VideoPlayerController.file(File(_filename));
+      return _controller.initialize().then((_) {
+        _controller.setLooping(true);
+        setState(() {
           _controller.play();
         });
       });
     });
-
-  }
-
-  Future<String> _writeVideoList() async {
-    var file = File(widget.dir + "/videos.txt");
-    if (await file.exists()) {
-      await file.delete();
-    }
-    String files = "";
-    for (var clip in widget.clips) {
-      logger.i("Adding file ${clip.filename}!");
-      files += "file '" + widget.dir + clip.filename + "'\n";
-    }
-    await file.writeAsString(files);
-    logger.i("File: ${file.readAsStringSync()}");
-    return file.path;
   }
 
   @override
@@ -322,7 +377,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
       body: SafeArea(
         child: fullscreenAspectRatio(
           context: context,
-          aspectRatio: controllerReady ? _controller.value.aspectRatio : (1080.0/1920.0),
+          aspectRatio: controllerReady ? _controller.value.aspectRatio : (1080.0 / 1920.0),
           video: (w, h) {
             return FutureBuilder(
               future: _controllerFuture,
@@ -340,6 +395,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
                     ),
                   );
                 } else {
+                  logger.i("Connection state: ${snapshot.connectionState} ... controller ? $_controller");
                   return Center(child: CircularProgressIndicator());
                 }
               },
@@ -347,28 +403,29 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
           },
           stack: <Widget>[
             CloseButton(icon: Icons.arrow_back),
-            if (controllerReady) _NextButton(
-              text: "Next",
-              onPressed: () {
-                _controller.pause().then((_) {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        return VideoDetailsScreen(
-                          filename: widget.clips[0].filename,
-                        );
-                      },
-                      transitionsBuilder: slideFrom(1, 0),
-                    ),
-                  ).then((_) {
-                    setState(() {
-                      _controller.play();
+            if (controllerReady)
+              _NextButton(
+                text: "Next",
+                onPressed: () {
+                  _controller.pause().then((_) {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) {
+                          return VideoDetailsScreen(
+                            filename: _filename,
+                          );
+                        },
+                        transitionsBuilder: slideFrom(1, 0),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        _controller.play();
+                      });
                     });
                   });
-                });
-              },
-            )
+                },
+              )
           ],
         ),
       ),
@@ -388,7 +445,7 @@ class _RecordingEditingScreenState extends State<RecordingEditingScreen> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 }
@@ -403,7 +460,7 @@ class CameraRecordingController {
   int curClip = 0;
 
   String tempDir;
-  List<VideoClip> clips = [];
+  VideoClips clips = VideoClips();
 
   CameraRecordingController(this._listener) {
     getTemporaryDirectory().then((dir) {
@@ -420,7 +477,7 @@ class CameraRecordingController {
   }
 
   Future<void> _initCamera() async {
-    cameraController = CameraController(cameras[getSelectedCameraID()], ResolutionPreset.high);
+    cameraController = CameraController(cameras[getSelectedCameraID()], ResolutionPreset.medium);
     return cameraController.initialize().then((_) {
       cameraController.prepareForVideoRecording();
       _listener();
@@ -432,6 +489,8 @@ class CameraRecordingController {
     _usingBackCam = !_usingBackCam;
     if (recordingController.recording) {
       await cameraController.stopVideoRecording();
+      clips.processClip(tempDir, curClip);
+      curClip++;
     }
     await cameraController.dispose();
     await _initCamera();
@@ -457,7 +516,7 @@ class CameraRecordingController {
   }
 
   Future<void> restartRecording() async {
-    clips = [];
+    clips = VideoClips();
     curClip = 0;
     var recDir = Directory(tempDir);
     if (recDir.existsSync()) {
@@ -468,10 +527,9 @@ class CameraRecordingController {
 
   Future<void> startRecording() async {
     logger.i("Started recording");
-    var path = "/clip_$curClip.mp4";
-    await cameraController.startVideoRecording(tempDir + path);
-    clips.add(VideoClip(path));
-    curClip++;
+    var path = "/clip_$curClip";
+    await cameraController.startVideoRecording(tempDir + path + ".mp4");
+    clips.add(VideoClip(filename: path, usesBackCam: _usingBackCam));
   }
 
   Future<void> _recordingCallback(RecordingController controller) async {
@@ -481,6 +539,8 @@ class CameraRecordingController {
     } else {
       logger.i("Recording paused");
       cameraController.stopVideoRecording();
+      clips.processClip(tempDir, curClip);
+      curClip++;
       _listener();
     }
   }
