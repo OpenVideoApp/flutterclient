@@ -53,31 +53,6 @@ Future<bool> uploadVideo(UploadableVideo builder, String filename) async {
     return false;
   }
 
-  var query = await graphqlClient.value.mutate(MutationOptions(
-    documentNode: gql("""
-    mutation VideoUploadFinished(\$id: String!) {
-      result: handleCompletedVideoUpload(videoId: \$id) {
-        ... on APIResult {success}
-        ... on APIError {error}
-      }
-    }
-  """),
-    variables: {
-      "id": builder.id,
-    },
-  ));
-
-  if (query.hasException) {
-    logger.w("Failed to get complete video upload: ${query.exception}");
-    return false;
-  }
-
-  var result = query.data["result"];
-  if (result["error"] != null) {
-    logger.w("Failed to handle completed upload: ${result["error"]}");
-    return false;
-  }
-
-  logger.i("Video upload handled: ${result["success"]}");
+  logger.i("Uploaded video $filename");
   return true;
 }

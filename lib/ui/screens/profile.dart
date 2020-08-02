@@ -127,6 +127,18 @@ class _ProfileTabState extends State<ProfileTab> {
                     ? _PersonalProfileButtons()
                     : _ProfileButtons(user),
                 divider,
+                Container(
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  child: Text(
+                    "Videos",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 17,
+                    ),
+                  ),
+                ),
+                divider,
               ],
             ),
           );

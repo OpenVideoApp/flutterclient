@@ -409,7 +409,7 @@ class CameraRecordingController {
   Future<void> startRecording() async {
     logger.i("Started recording");
     var clipFile = clips.create(usingBackCam: _usingBackCam);
-    await cameraController.startVideoRecording(clipFile);
+    return cameraController.startVideoRecording(clipFile);
   }
 
   Future<void> _recordingCallback(RecordingController controller) async {
