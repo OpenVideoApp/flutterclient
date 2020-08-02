@@ -65,17 +65,30 @@ class Comment {
 }
 
 class Video {
-  String id, src, desc;
-  int likes, shares, comments;
+  String id, src, previewSrc, desc;
+  int views, likes, shares, comments;
   bool liked;
   Sound sound;
   User user;
   VoidCallback likeCallback;
 
-  Video({this.id, this.src, this.desc, this.likes, this.shares, this.comments, this.liked, this.sound, this.user}) {
-    getFile().then((file) {
-      logger.i("Cached video #$id");
-    });
+  Video(
+      {this.id,
+      this.src,
+      this.previewSrc,
+      this.desc,
+      this.views,
+      this.likes,
+      this.shares,
+      this.comments,
+      this.liked,
+      this.sound,
+      this.user}) {
+    if (this.src != null) {
+      getFile().then((file) {
+        logger.i("Cached video #$id");
+      });
+    }
   }
 
   Future<File> getFile() {
@@ -83,16 +96,26 @@ class Video {
   }
 
   factory Video.fromJson(Map<String, dynamic> json) {
+    var sound, user;
+    if (json.containsKey("sound")) {
+      sound = Sound.fromJson(json["sound"]);
+    }
+    if (json.containsKey("user")) {
+      user = User.fromJson(json["user"]);
+    }
     return new Video(
-        id: json["id"],
-        src: json["src"],
-        desc: json["desc"],
-        likes: json["likes"],
-        shares: 0,
-        comments: json["comments"],
-        liked: json["liked"],
-        sound: Sound.fromJson(json["sound"]),
-        user: User.fromJson(json["user"]));
+      id: json["id"],
+      src: json["src"],
+      previewSrc: json["previewSrc"],
+      desc: json["desc"],
+      views: json["views"],
+      likes: json["likes"],
+      shares: 0,
+      comments: json["comments"],
+      liked: json["liked"],
+      sound: sound,
+      user: user,
+    );
   }
 
   void setLiked(liked) {

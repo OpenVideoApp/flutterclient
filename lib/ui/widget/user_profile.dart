@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/api/user.dart';
+import 'package:flutterclient/api/video.dart';
+import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/screens/profile.dart';
 import 'package:flutterclient/ui/uihelpers.dart';
@@ -16,12 +18,56 @@ class ProfileScreenNotification extends Notification {
   ProfileScreenNotification({this.opened = true});
 }
 
+class VideoPreview extends StatefulWidget {
+  final Video video;
+
+  VideoPreview(this.video);
+
+  _VideoPreviewState createState() => _VideoPreviewState();
+}
+
+class _VideoPreviewState extends State<VideoPreview> {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        Image(
+          fit: BoxFit.fitWidth,
+          image: NetworkImage(widget.video.previewSrc),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: Padding(
+            padding: EdgeInsets.all(5),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  FontAwesome.eye_solid,
+                  size: 13,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 5),
+                Text(
+                  compactInt(widget.video.views),
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class FollowButton extends StatefulWidget {
   final User user;
   final double width, height, fontSize;
 
-  FollowButton(this.user,
-      {this.width = 100, this.height = 35, this.fontSize = 15});
+  FollowButton(this.user, {this.width = 100, this.height = 35, this.fontSize = 15});
 
   _FollowButtonState createState() => _FollowButtonState();
 }
@@ -54,13 +100,9 @@ class _FollowButtonState extends State<FollowButton> {
           },
         ))
             .then((result) {
-          if (result.hasException)
-            return logger.w(
-                "Failed to change following for '$who': ${result.exception}");
+          if (result.hasException) return logger.w("Failed to change following for '$who': ${result.exception}");
           var res = result.data["followUser"];
-          if (res["error"] != null)
-            return logger
-                .w("Failed to change following for '$who': ${res["error"]}");
+          if (res["error"] != null) return logger.w("Failed to change following for '$who': ${res["error"]}");
           logger.i("${following ? "Unf" : "F"}ollowed '$who'!");
           new ProfileUpdatedNotification().dispatch(context);
         });
@@ -123,8 +165,7 @@ class UserListItem extends StatelessWidget {
                 ],
               ),
             ),
-            if (this.user.name != AuthInfo.instance().username)
-              FollowButton(this.user)
+            if (this.user.name != AuthInfo.instance().username) FollowButton(this.user)
           ],
         ),
       ),
@@ -291,9 +332,7 @@ class UserOverview extends StatelessWidget {
                   verticalDivider,
                   ProfileStatButton(
                     onTap: () {
-                      Navigator.of(context)
-                          .push(_userListRoute(following: false))
-                          .then((_) {
+                      Navigator.of(context).push(_userListRoute(following: false)).then((_) {
                         new ProfileUpdatedNotification().dispatch(context);
                       });
                     },

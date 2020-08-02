@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutterclient/api/auth.dart';
 import 'package:flutterclient/api/user.dart';
+import 'package:flutterclient/api/video.dart';
 import 'package:flutterclient/fontawesome/font_awesome_icons.dart';
 import 'package:flutterclient/logging.dart';
 import 'package:flutterclient/ui/widget/buttons.dart';
@@ -58,6 +59,11 @@ class _ProfileTabState extends State<ProfileTab> {
                   followers
                   likes
                   followedByYou
+                  videos {
+                    id
+                    previewSrc
+                    views
+                  }
                 } ... on APIError {error}
               }
             }
@@ -66,8 +72,7 @@ class _ProfileTabState extends State<ProfileTab> {
             "username": widget.username,
           },
         ),
-        builder: (QueryResult result,
-            {VoidCallback refetch, FetchMore fetchMore}) {
+        builder: (QueryResult result, {VoidCallback refetch, FetchMore fetchMore}) {
           if (result.hasException) {
             return Text(result.exception.toString());
           } else if (result.loading) {
@@ -123,9 +128,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     )),
                 divider,
                 UserOverview(user: user),
-                personalProfile
-                    ? _PersonalProfileButtons()
-                    : _ProfileButtons(user),
+                personalProfile ? _PersonalProfileButtons() : _ProfileButtons(user),
                 divider,
                 Container(
                   alignment: Alignment.center,
@@ -139,6 +142,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
                 divider,
+                _VideoList(user.videos),
               ],
             ),
           );
@@ -150,6 +154,28 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   void dispose() {
     super.dispose();
+  }
+}
+
+class _VideoList extends StatelessWidget {
+  final List<Video> videos;
+
+  _VideoList(this.videos);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GridView.builder(
+        itemCount: videos.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: (128.0 / 192.0),
+        ),
+        itemBuilder: (BuildContext context, int index) {
+          return new VideoPreview(videos[index]);
+        },
+      ),
+    );
   }
 }
 
